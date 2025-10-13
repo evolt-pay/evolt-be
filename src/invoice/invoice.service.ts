@@ -13,39 +13,37 @@ import {
     ContractId,
 } from "@hashgraph/sdk";
 import { ethers } from "ethers";
-// import VoltEscrowArtifact from "../abi/VoltEscrow.json";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const abiPath = path.resolve(__dirname, "../abi/VoltEscrow.json");
+const VoltEscrowArtifact = JSON.parse(fs.readFileSync(abiPath, "utf-8"));
 import InvoiceModel from "./invoice.model.js";
 import { v4 as uuidv4 } from "uuid";
 import UtilService from "../util/util.service.js";
 import dotenv from "dotenv";
 dotenv.config();
 
+/* ====== ENV (keep SDK on TREASURY; EVM signer owns the escrow) ====== */
 const TREASURY_ID = process.env.HEDERA_OPERATOR_ID!;                 // 0.0.6968947
 const TREASURY_KEY = process.env.HEDERA_OPERATOR_KEY!;               // DER (Ed25519)
-const RPC_URL = process.env.HEDERA_RPC_URL!;
-const ESCROW_EVM = process.env.VOLT_ESCROW_EVM_ADDRESS!;
-const EVM_OWNER_PK = process.env.HEDERA_EVM_OPERATOR_PRIVATE_KEY!;
+const RPC_URL = process.env.HEDERA_RPC_URL!;                     // https://testnet.hashio.io/api
+const ESCROW_EVM = process.env.VOLT_ESCROW_EVM_ADDRESS!;            // 0x436c...
+const EVM_OWNER_PK = process.env.HEDERA_EVM_OPERATOR_PRIVATE_KEY!;   // 0x...
 const HCS_TOPIC_ID = process.env.HCS_TOPIC_ID!;
 const ITOKEN_ESCROW_FUND = parseInt(process.env.ITOKEN_ESCROW_FUND || "0", 10);
 
+/* ====== Clients ====== */
 const hederaClient = Client.forTestnet().setOperator(TREASURY_ID, TREASURY_KEY); // <-- treasury (SDK)
 const provider = new ethers.JsonRpcProvider(RPC_URL, { name: "hedera-testnet", chainId: 296 });
-const signer = new ethers.Wallet(EVM_OWNER_PK, provider);
-// const VoltEscrowArtifact = await import("../abi/VoltEscrow.json", { assert: { type: "json" } });
-// const escrow = new ethers.Contract(ESCROW_EVM, (VoltEscrowArtifact as any).abi, signer);
+const signer = new ethers.Wallet(EVM_OWNER_PK, provider);                      // <-- escrow owner (EVM)
+const escrow = new ethers.Contract(ESCROW_EVM, (VoltEscrowArtifact as any).abi, signer);
 
-const VoltEscrowArtifact = await import("../abi/VoltEscrow.json", { assert: { type: "json" } });
-
-if (!VoltEscrowArtifact.default?.abi) {
-    throw new Error("VoltEscrow.json ABI missing — check compiled artifact");
-}
-
-const escrow = new ethers.Contract(
-    ESCROW_EVM,
-    VoltEscrowArtifact.default.abi,
-    signer
-);
-
+/* ====== Helpers ====== */
+// 0.0.x -> mirror EVM address
 function idToEvmAddress(id: string): string {
     if (id.startsWith("0x")) return ethers.getAddress(id);
     const [shardStr, realmStr, numStr] = id.split(".");
@@ -59,6 +57,7 @@ function idToEvmAddress(id: string): string {
     return ethers.getAddress("0x" + hex);
 }
 
+// keep metadata <= ~100 bytes
 function compactTokenMeta(inv: any): string {
     const MAX = 100;
     const meta: any = { i: String(inv.invoiceNumber), a: Number(inv.amount), u: (inv.blobUrl ?? "").slice(0, 40) };
@@ -214,8 +213,8 @@ class InvoiceService {
             tokenId,
             tokenEvm,
             initialSupply: totalTokens,
-            escrowContractId: ESCROW_CONTRACT_ID,
-            escrowEvm: ESCROW_EVM,
+            escrowContractId: ESCROW_CONTRACT_ID,          // e.g. "0.0.8036554"
+            escrowEvm: ESCROW_EVM,                         // e.g. "0x803A0eF8..."
         });
         return { tokenId, tokenEvm, initialSupply: totalTokens, escrowContractId: ESCROW_CONTRACT_ID };
     }

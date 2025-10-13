@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && yarn copy:abi",
+    "copy:abi": "copyfiles -u 1 src/abi/*.json dist/",
     "start": "node dist/index.js",
     "start:dev": "tsx watch src/index.ts",
     "create:topic": "tsx src/scripts/create-topic.ts",
@@ -68,6 +69,7 @@
     "@typescript-eslint/eslint-plugin": "^8.43.0",
     "@typescript-eslint/parser": "^8.43.0",
     "chai": "^5.1.2",
+    "copyfiles": "^2.4.1",
     "coveralls": "^3.1.1",
     "cross-env": "^10.0.0",
     "eslint": "^9.35.0",

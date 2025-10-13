@@ -27,7 +27,7 @@ app.register(corePlugin);
 const start = async (): Promise<void> => {
     try {
         await app.ready();
-        await app.listen({ port: config.app.port });
+        await app.listen({ host: "0.0.0.0", port: config.app.port });
     } catch (err) {
         app.log.error(err);
         process.exit(1);

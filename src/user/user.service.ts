@@ -1,4 +1,4 @@
-import { UserModel, IUser } from "./user.model";
+import { UserModel, IUser } from "./user.model.js";
 import { FilterQuery } from "mongoose";
 
 class UserService {

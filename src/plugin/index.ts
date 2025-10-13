@@ -8,14 +8,14 @@ import fastifySwaggerUI from '@fastify/swagger-ui';
 import fastifySensible from '@fastify/sensible';
 import fastifyMultipart from '@fastify/multipart';
 import fastifyJwt from '@fastify/jwt';
-import { websocketPlugin } from "./websocket.plugin";
+import { websocketPlugin } from "./websocket.plugin.js";
 import fastifyWebsocket from "@fastify/websocket";
 import fastifyRedis from "@fastify/redis";
 import fastifyCors from "@fastify/cors";
-import { indexRoute } from '../index.route';
-import { errorHandlerPlugin } from '../config/error-handler';
-import { Options } from '../config/swagger';
-import { config } from '../config/app';
+import { indexRoute } from '../index.route.js';
+import { errorHandlerPlugin } from '../config/error-handler.js';
+import { Options } from '../config/swagger.js';
+import { config } from '../config/app.js';
 
 
 export async function corePlugin(

@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { UserModel } from '../user/user.model';
+import { UserModel } from '../user/user.model.js';
 import { httpErrors } from '@fastify/sensible';
 
 export async function authenticate(req: FastifyRequest, reply: FastifyReply) {

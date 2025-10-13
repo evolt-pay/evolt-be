@@ -1,5 +1,4 @@
-// src/invoice/invoice.service.ts
-import { AzureUtil } from "@util/azure.util";
+import { AzureUtil } from "../util/azure.util.js";
 import {
     TopicMessageSubmitTransaction,
     TokenCreateTransaction,
@@ -14,10 +13,10 @@ import {
     ContractId,
 } from "@hashgraph/sdk";
 import { ethers } from "ethers";
-import VoltEscrowArtifact from "../abi/VoltEscrow.json";
-import InvoiceModel from "./invoice.model";
+// import VoltEscrowArtifact from "../abi/VoltEscrow.json";
+import InvoiceModel from "./invoice.model.js";
 import { v4 as uuidv4 } from "uuid";
-import UtilService from "@util/util.service";
+import UtilService from "../util/util.service.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -31,9 +30,21 @@ const ITOKEN_ESCROW_FUND = parseInt(process.env.ITOKEN_ESCROW_FUND || "0", 10);
 
 const hederaClient = Client.forTestnet().setOperator(TREASURY_ID, TREASURY_KEY); // <-- treasury (SDK)
 const provider = new ethers.JsonRpcProvider(RPC_URL, { name: "hedera-testnet", chainId: 296 });
-const signer = new ethers.Wallet(EVM_OWNER_PK, provider);                      // <-- escrow owner (EVM)
-const escrow = new ethers.Contract(ESCROW_EVM, (VoltEscrowArtifact as any).abi, signer);
+const signer = new ethers.Wallet(EVM_OWNER_PK, provider);
+// const VoltEscrowArtifact = await import("../abi/VoltEscrow.json", { assert: { type: "json" } });
+// const escrow = new ethers.Contract(ESCROW_EVM, (VoltEscrowArtifact as any).abi, signer);
 
+const VoltEscrowArtifact = await import("../abi/VoltEscrow.json", { assert: { type: "json" } });
+
+if (!VoltEscrowArtifact.default?.abi) {
+    throw new Error("VoltEscrow.json ABI missing — check compiled artifact");
+}
+
+const escrow = new ethers.Contract(
+    ESCROW_EVM,
+    VoltEscrowArtifact.default.abi,
+    signer
+);
 
 function idToEvmAddress(id: string): string {
     if (id.startsWith("0x")) return ethers.getAddress(id);

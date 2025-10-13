@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import InvoiceService from "./invoice.service";
+import InvoiceService from "./invoice.service.js";
 
 class InvoiceController {
     async createInvoice(req: FastifyRequest, reply: FastifyReply) {

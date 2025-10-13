@@ -1,13 +1,13 @@
 import { FastifyInstance, RouteOptions } from "fastify";
-import InvoiceController from "./invoice.controller";
-import { RouteMethods } from "@util/util.dto";
-import { authenticate } from "@middleware/index";
+import InvoiceController from "./invoice.controller.js";
+import { authenticate } from "../middleware/index.js";
 import {
     CreateInvoiceSchema,
     VerifyInvoiceSchema,
     GetInvoiceSchema,
     GetVerifiedInvoicesSchema
-} from "./invoice.schema";
+} from "./invoice.schema.js";
+import { RouteMethods } from "../util/util.dto.js";
 
 export default async function invoiceRoutes(app: FastifyInstance) {
     const routes: RouteOptions[] = [

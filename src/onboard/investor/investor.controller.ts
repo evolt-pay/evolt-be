@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import InvestorService from "./investor.service";
-import UtilService from "../../util/util.service";
+import InvestorService from "./investor.service.js";
+import UtilService from "../../util/util.service.js";
 
 class InvestorController {
     async onboardInvestor(req: FastifyRequest, reply: FastifyReply) {

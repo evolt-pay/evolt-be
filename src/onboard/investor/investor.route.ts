@@ -1,7 +1,7 @@
 import { FastifyInstance, RouteOptions } from "fastify";
-import InvestorController from "./investor.controller";
-import { authenticate } from "../../middleware/index";
-import { RouteMethods } from "../../util/util.dto";
+import InvestorController from "./investor.controller.js";
+import { authenticate } from "../../middleware/index.js";
+import { RouteMethods } from "../../util/util.dto.js";
 
 export default async function investorRoutes(app: FastifyInstance) {
     const routes: RouteOptions[] = [

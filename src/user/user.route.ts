@@ -1,0 +1,20 @@
+import { FastifyInstance, RouteOptions } from "fastify";
+import UserController from "./user.controller.js";
+import { authenticate } from "../middleware/index.js";
+import {
+    GetProfileSchema,
+    UpdateProfileSchema,
+    GetActivitiesSchema,
+} from "./user.schema";
+import { RouteMethods } from "../util/util.dto.js";
+
+export default function userRoutes(app: FastifyInstance) {
+    const controller = new UserController(app);
+
+    const routes: RouteOptions[] = [
+        { method: RouteMethods.GET, url: "/profile", handler: controller.getProfile, preHandler: [authenticate], schema: GetProfileSchema },
+        { method: RouteMethods.PUT, url: "/profile", handler: controller.updateProfile, preHandler: [authenticate], schema: UpdateProfileSchema },
+    ];
+
+    routes.forEach((route) => app.route(route));
+}

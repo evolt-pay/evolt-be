@@ -21,23 +21,20 @@ import UtilService from "@util/util.service";
 import dotenv from "dotenv";
 dotenv.config();
 
-/* ====== ENV (keep SDK on TREASURY; EVM signer owns the escrow) ====== */
 const TREASURY_ID = process.env.HEDERA_OPERATOR_ID!;                 // 0.0.6968947
 const TREASURY_KEY = process.env.HEDERA_OPERATOR_KEY!;               // DER (Ed25519)
-const RPC_URL = process.env.HEDERA_RPC_URL!;                     // https://testnet.hashio.io/api
-const ESCROW_EVM = process.env.VOLT_ESCROW_EVM_ADDRESS!;            // 0x436c...
-const EVM_OWNER_PK = process.env.HEDERA_EVM_OPERATOR_PRIVATE_KEY!;   // 0x...
+const RPC_URL = process.env.HEDERA_RPC_URL!;
+const ESCROW_EVM = process.env.VOLT_ESCROW_EVM_ADDRESS!;
+const EVM_OWNER_PK = process.env.HEDERA_EVM_OPERATOR_PRIVATE_KEY!;
 const HCS_TOPIC_ID = process.env.HCS_TOPIC_ID!;
 const ITOKEN_ESCROW_FUND = parseInt(process.env.ITOKEN_ESCROW_FUND || "0", 10);
 
-/* ====== Clients ====== */
 const hederaClient = Client.forTestnet().setOperator(TREASURY_ID, TREASURY_KEY); // <-- treasury (SDK)
 const provider = new ethers.JsonRpcProvider(RPC_URL, { name: "hedera-testnet", chainId: 296 });
 const signer = new ethers.Wallet(EVM_OWNER_PK, provider);                      // <-- escrow owner (EVM)
 const escrow = new ethers.Contract(ESCROW_EVM, (VoltEscrowArtifact as any).abi, signer);
 
-/* ====== Helpers ====== */
-// 0.0.x -> mirror EVM address
+
 function idToEvmAddress(id: string): string {
     if (id.startsWith("0x")) return ethers.getAddress(id);
     const [shardStr, realmStr, numStr] = id.split(".");
@@ -51,7 +48,6 @@ function idToEvmAddress(id: string): string {
     return ethers.getAddress("0x" + hex);
 }
 
-// keep metadata <= ~100 bytes
 function compactTokenMeta(inv: any): string {
     const MAX = 100;
     const meta: any = { i: String(inv.invoiceNumber), a: Number(inv.amount), u: (inv.blobUrl ?? "").slice(0, 40) };
@@ -207,8 +203,8 @@ class InvoiceService {
             tokenId,
             tokenEvm,
             initialSupply: totalTokens,
-            escrowContractId: ESCROW_CONTRACT_ID,          // e.g. "0.0.8036554"
-            escrowEvm: ESCROW_EVM,                         // e.g. "0x803A0eF8..."
+            escrowContractId: ESCROW_CONTRACT_ID,
+            escrowEvm: ESCROW_EVM,
         });
         return { tokenId, tokenEvm, initialSupply: totalTokens, escrowContractId: ESCROW_CONTRACT_ID };
     }

@@ -4,7 +4,6 @@ import { authenticate } from "../middleware/index.js";
 import {
     GetProfileSchema,
     UpdateProfileSchema,
-    GetActivitiesSchema,
 } from "./user.schema.js";
 import { RouteMethods } from "../util/util.dto.js";
 

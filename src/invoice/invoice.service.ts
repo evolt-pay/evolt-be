@@ -25,6 +25,7 @@ import InvoiceModel from "./invoice.model.js";
 import { v4 as uuidv4 } from "uuid";
 import UtilService from "../util/util.service.js";
 import dotenv from "dotenv";
+import businessService from "onboard/business/business.service.js";
 dotenv.config();
 
 /* ====== ENV (keep SDK on TREASURY; EVM signer owns the escrow) ====== */
@@ -68,7 +69,12 @@ function compactTokenMeta(inv: any): string {
 }
 
 class InvoiceService {
-    async createInvoice(businessId: string, data: any, file: any) {
+    async createInvoice(userId: string, data: any, file: any) {
+        const business = await businessService.getBusinessProfile(userId);
+        if (!business) {
+            throw new Error("Business profile not found. Please complete KYB first.");
+        }
+
         const blobUrl = await AzureUtil.uploadFileFromBuffer(file.buffer, `invoices/${uuidv4()}.pdf`);
         const invoice = await InvoiceModel.create({ ...data, blobUrl, status: "pending" });
 

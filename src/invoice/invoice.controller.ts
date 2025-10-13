@@ -26,7 +26,7 @@ class InvoiceController {
 
             // 🔹 Proceed to create the invoice
             const invoice = await InvoiceService.createInvoice(
-                user?._id ?? "test_user",
+                user.id,
                 data,
                 {
                     buffer,

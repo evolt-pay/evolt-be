@@ -43,7 +43,6 @@ const signer = new ethers.Wallet(EVM_OWNER_PK, provider);                      /
 const escrow = new ethers.Contract(ESCROW_EVM, (VoltEscrowArtifact as any).abi, signer);
 
 /* ====== Helpers ====== */
-// 0.0.x -> mirror EVM address
 function idToEvmAddress(id: string): string {
     if (id.startsWith("0x")) return ethers.getAddress(id);
     const [shardStr, realmStr, numStr] = id.split(".");
@@ -213,8 +212,8 @@ class InvoiceService {
             tokenId,
             tokenEvm,
             initialSupply: totalTokens,
-            escrowContractId: ESCROW_CONTRACT_ID,          // e.g. "0.0.8036554"
-            escrowEvm: ESCROW_EVM,                         // e.g. "0x803A0eF8..."
+            escrowContractId: ESCROW_CONTRACT_ID,
+            escrowEvm: ESCROW_EVM,
         });
         return { tokenId, tokenEvm, initialSupply: totalTokens, escrowContractId: ESCROW_CONTRACT_ID };
     }

@@ -1,7 +1,4 @@
 import mongoose from "mongoose";
-import { KycDetails } from "@kyc/kyc.dto.js";
-import { UserRole } from "./user.model.js";
-import { Otp } from "@auth/auth.dto.js";
 
 export interface CreateUserDTO {
     firstName: string;
@@ -9,6 +6,19 @@ export interface CreateUserDTO {
     email: string;
     phoneNumber?: string;
     password: string;
+}
+
+export interface Otp {
+    code: string;
+    expiresAt: Date;
+    purpose: "emailVerification" | "passwordReset" | "loginVerification";
+}
+
+export enum UserRole {
+    USER = "user",
+    ADMIN = "admin",
+    INVESTOR = "investor",
+    BUSINESS = "business",
 }
 
 export interface LoginDTO {
@@ -96,7 +106,6 @@ export interface UserDoc extends Document {
     password: string;
     businesses?: mongoose.Types.ObjectId[];
     isVerified: boolean;
-    kycDetails: KycDetails;
     employmentInfo: EmploymentInfo;
     role: UserRole;
     address?: Address,

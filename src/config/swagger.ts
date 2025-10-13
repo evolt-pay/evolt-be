@@ -3,8 +3,8 @@ export const Options = {
     exposeRoute: true,
     swagger: {
         info: {
-            title: 'Volt Backend ',
-            description: 'Building the Volt Backend V1',
+            title: 'EVolt Backend ',
+            description: 'Building the EVolt Backend V1',
             version: '2.0.0',
         },
         securityDefinitions: {

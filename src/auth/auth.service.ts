@@ -1,17 +1,18 @@
 import { FastifyInstance } from "fastify";
 import { httpErrors } from "@fastify/sensible";
-import UserService from "../user/user.service";
-import UtilService from "../util/util.service";
+import UserService from "../user/user.service.js";
+import UtilService from "../util/util.service.js";
 import {
     ISendOtp,
-    ISendSignupOtp,
+    ISignup,
     IVerifyOtp,
     ISetPassword,
     ILogin,
-} from "./auth.dto";
+} from "./auth.dto.js";
 
 export default class AuthService {
     constructor(private app: FastifyInstance) { }
+
 
     async sendOtp({ email }: ISendOtp): Promise<void> {
         const user = await UserService.fetchOneUser({ email });
@@ -36,31 +37,39 @@ export default class AuthService {
         await UtilService.sendEmail(email, "Your OTP Code", `Your OTP is ${otp}`);
     }
 
-    async sendSignupOtp(data: ISendSignupOtp): Promise<void> {
-        const { email } = data;
-        const user = await UserService.fetchOneUser({ email });
 
-        if (user && user.isVerified) {
+    async signup(data: ISignup): Promise<void> {
+        const { email, password, accountType } = data;
+        const existingUser = await UserService.fetchOneUser({ email });
+
+        if (existingUser && existingUser.isVerified) {
             throw httpErrors.badRequest("Email already registered");
         }
 
         const otp = UtilService.generateOtp();
         const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-        if (!user) {
+        if (!existingUser) {
             await UserService.createPendingUser({
                 ...data,
                 otp: { code: otp, expiresAt: otpExpiresAt, purpose: "emailVerification" },
+                password,
+                role: accountType,
+                onboardingStep: "otp_sent",
             });
         } else {
-            user.otp = { code: otp, expiresAt: otpExpiresAt, purpose: "emailVerification" };
-            await (user as any).save();
+            existingUser.password = password;
+            existingUser.role = accountType;
+            existingUser.otp = { code: otp, expiresAt: otpExpiresAt, purpose: "emailVerification" };
+            existingUser.onboardingStep = "otp_sent";
+            await (existingUser as any).save();
         }
 
         await UtilService.sendEmail(email, "Your OTP Code", `Your OTP is ${otp}`);
     }
 
-    async verifyOtp({ email, otp }: IVerifyOtp): Promise<{ token: string }> {
+
+    async verifyOtp({ email, otp }: IVerifyOtp): Promise<{ token: string; accountType: string }> {
         const valid = await UserService.verifyOtp(email, otp);
         if (!valid) throw httpErrors.badRequest("Invalid or expired OTP");
 
@@ -73,16 +82,23 @@ export default class AuthService {
             email: user.email,
         });
 
-        return { token };
+        await UserService.updateUser((user as any)._id, {
+            onboardingStep: "otp_verified",
+            isVerified: true,
+        });
+
+        return { token, accountType: user.role };
     }
+
 
     async setPassword(userId: string, { password }: ISetPassword): Promise<void> {
         await UserService.setPassword(userId, password);
     }
 
-    async login({ email, password }: ILogin): Promise<{ token: string }> {
+
+    async login({ email, password }: ILogin): Promise<{ token: string; role: string }> {
         const user = await UserService.fetchOneUserWithPassword({ email });
-        if (!user) throw httpErrors.notFound("Invalid credentials");
+        if (!user) throw httpErrors.badRequest("Invalid credentials");
 
         const match = await user.comparePassword(password);
         if (!match) throw httpErrors.badRequest("Invalid credentials");
@@ -93,6 +109,6 @@ export default class AuthService {
             email: user.email,
         });
 
-        return { token };
+        return { token, role: user.role };
     }
 }

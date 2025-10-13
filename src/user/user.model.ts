@@ -18,7 +18,7 @@ export interface IUser extends Document {
     isVerified: boolean;
     hederaAccountId?: string;
     hederaEvm?: string;
-    onboardingStep?: "otp_verified" | "personal_saved" | "password_set" | "wallet_linked";
+    onboardingStep?: "otp_sent" | "otp_verified" | "personal_saved" | "password_set" | "wallet_linked";
     kycStatus?: "none" | "pending" | "approved" | "rejected";
     address?: {
         country?: string;
@@ -29,7 +29,7 @@ export interface IUser extends Document {
     otp?: IOtp;
     otpAttempts?: number;
     otpBlockedUntil?: Date;
-    role: "user" | "admin";
+    role: "user" | "admin" | "investor" | "business";
     passwordUpdatedAt: Date;
 
     comparePassword(password: string): Promise<boolean>;
@@ -63,7 +63,8 @@ const UserSchema = new Schema<IUser>(
         hederaEvm: String,
         onboardingStep: {
             type: String,
-            enum: ["otp_verified", "personal_saved", "password_set", "wallet_linked"],
+            enum: ["otp_sent", "otp_verified", "personal_saved", "password_set", "wallet_linked"],
+            default: "otp_sent",
         },
         kycStatus: {
             type: String,
@@ -79,7 +80,7 @@ const UserSchema = new Schema<IUser>(
         otp: OtpSchema,
         otpAttempts: { type: Number, default: 0 },
         otpBlockedUntil: Date,
-        role: { type: String, enum: ["user", "admin"], default: "user" },
+        role: { type: String, enum: ["user", "admin", "investor", "business"], default: "investor" },
         passwordUpdatedAt: { type: Date, default: Date.now },
     },
     { timestamps: true }

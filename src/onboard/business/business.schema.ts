@@ -1,0 +1,2 @@
+import { FastifySchema } from "fastify";
+

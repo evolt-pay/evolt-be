@@ -1,18 +1,15 @@
-import { FastifyInstance } from 'fastify';
-import authRoutes from './auth/auth.route.js';
-import userRoutes from './user/user.route.js';
+import { FastifyInstance } from "fastify";
+import authRoutes from "./auth/auth.route.js";
+import userRoutes from "./user/user.route.js";
+import investorRoutes from "./onboard/investor/investor.route.js";
+import businessRoutes from "./onboard/business/business.route.js";
 
+export const indexRoute = async (app: FastifyInstance) => {
+    app.register(authRoutes, { prefix: "/api/v1/auth" });
 
-export const indexRoute = function (app: FastifyInstance) {
+    app.register(userRoutes, { prefix: "/api/v1/user" });
 
-    app.register(async (app) => {
-        await authRoutes(app);
-    }, { prefix: '/api/v1/auth' });
+    app.register(investorRoutes, { prefix: "/api/v1/onboard" });
 
-
-    app.register(async (app) => {
-        await userRoutes(app);
-    }, { prefix: '/api/v1/user' });
-
-
+    app.register(businessRoutes, { prefix: "/api/v1/onboard" });
 };

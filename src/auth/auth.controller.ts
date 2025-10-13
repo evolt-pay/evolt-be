@@ -3,7 +3,7 @@ import AuthService from "./auth.service.js";
 import UtilService from "../util/util.service.js";
 import {
     ISendOtp,
-    ISendSignupOtp,
+    ISignup,
     IVerifyOtp,
     ISetPassword,
     ILogin,
@@ -22,18 +22,21 @@ class AuthController {
         reply.status(200).send(UtilService.customResponse(true, "OTP sent successfully"));
     };
 
-    sendSignupOtp = async (req: FastifyRequest, reply: FastifyReply) => {
-        const body = req.body as ISendSignupOtp;
-        await this.authService.sendSignupOtp(body);
+    signup = async (req: FastifyRequest, reply: FastifyReply) => {
+        const body = req.body as ISignup;
+        await this.authService.signup(body);
         reply.status(200).send(UtilService.customResponse(true, "Signup OTP sent successfully"));
     };
 
     verifyOtp = async (req: FastifyRequest, reply: FastifyReply) => {
         const body = req.body as IVerifyOtp;
-        const { token } = await this.authService.verifyOtp(body);
-        reply
-            .status(200)
-            .send(UtilService.customResponse(true, "OTP verified successfully", { token }));
+        const { token, accountType } = await this.authService.verifyOtp(body);
+        reply.status(200).send(
+            UtilService.customResponse(true, "OTP verified successfully", {
+                token,
+                accountType,
+            })
+        );
     };
 
     setPassword = async (req: FastifyRequest, reply: FastifyReply) => {
@@ -45,8 +48,8 @@ class AuthController {
 
     login = async (req: FastifyRequest, reply: FastifyReply) => {
         const body = req.body as ILogin;
-        const { token } = await this.authService.login(body);
-        reply.status(200).send(UtilService.customResponse(true, "Login successful", { token }));
+        const { token, role } = await this.authService.login(body);
+        reply.status(200).send(UtilService.customResponse(true, "Login successful", { token, role }));
     };
 }
 

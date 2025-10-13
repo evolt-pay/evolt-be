@@ -12,20 +12,40 @@ export const SendOtpSchema: FastifySchema = {
     },
 };
 
-export const SendSignupOtpSchema: FastifySchema = {
-    description: "Send OTP for signup",
+
+export const SignupSchema: FastifySchema = {
+    description: "Sign up (creates pending user and sends OTP to email)",
     tags: ["auth"],
     body: {
         type: "object",
-        required: ["firstName", "lastName", "email", "country", "accountType"],
+        required: [
+            "firstName",
+            "lastName",
+            "email",
+            "country",
+            "accountType",
+            "password",
+            "confirmPassword",
+        ],
         properties: {
-            firstName: { type: "string" },
-            lastName: { type: "string" },
+            firstName: { type: "string", minLength: 2 },
+            lastName: { type: "string", minLength: 2 },
             email: { type: "string", format: "email" },
             otherName: { type: "string" },
             country: { type: "string" },
             phoneNumber: { type: "string" },
             accountType: { type: "string", enum: ["investor", "business"] },
+            password: { type: "string", minLength: 6 },
+            confirmPassword: { type: "string", minLength: 6 },
+        },
+    },
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
+            },
         },
     },
 };

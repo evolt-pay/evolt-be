@@ -5,7 +5,7 @@ import {
     GetProfileSchema,
     UpdateProfileSchema,
     GetActivitiesSchema,
-} from "./user.schema";
+} from "./user.schema.js";
 import { RouteMethods } from "../util/util.dto.js";
 
 export default function userRoutes(app: FastifyInstance) {

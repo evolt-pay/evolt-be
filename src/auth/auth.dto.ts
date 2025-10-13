@@ -2,13 +2,13 @@ export interface ISendOtp {
     email: string;
 }
 
-export interface ISendSignupOtp {
-    firstName: string;
-    lastName: string;
-    otherName?: string;
-    country: string;
+export interface ISignup {
+    firstName?: string;
+    lastName?: string;
     email: string;
+    password?: string;
     phoneNumber?: string;
+    country?: string;
     accountType: "investor" | "business";
 }
 

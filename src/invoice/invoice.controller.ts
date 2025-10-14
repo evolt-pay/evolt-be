@@ -47,8 +47,8 @@ class InvoiceController {
 
     async verifyInvoice(req: FastifyRequest, reply: FastifyReply) {
         try {
-            const { id, verifier, corporateName } = req.body as any;
-            const result = await InvoiceService.verifyInvoice(id, verifier, corporateName);
+            const { id, verifier } = req.body as any;
+            const result = await InvoiceService.verifyInvoice(id, verifier);
             return reply.code(200).send({
                 message: "Invoice verified successfully",
                 data: result,

@@ -7,9 +7,21 @@ import {
 import { ethers } from "ethers";
 import InvestmentModel, { InvestmentDoc } from "./investment.model.js";
 import InvoiceModel from "../invoice/invoice.model.js";
-import VoltEscrowArtifact from "../abi/VoltEscrow.json";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 import dotenv from "dotenv";
 dotenv.config();
+
+// ✅ Use fs to read the ABI file manually (no import attribute needed)
+const abiPath = path.resolve(__dirname, "../abi/VoltEscrow.json");
+const VoltEscrowArtifact = JSON.parse(fs.readFileSync(abiPath, "utf-8"));
 
 /* ================== ENV ================== */
 const RPC_URL = process.env.HEDERA_RPC_URL!;

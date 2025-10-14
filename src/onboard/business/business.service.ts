@@ -47,6 +47,10 @@ class BusinessService {
         return BusinessModel.findOne({ userId });
     }
 
+    async getBusinessByd(businessId: string): Promise<IBusiness | null> {
+        return BusinessModel.findById(businessId);
+    }
+
     async updateKybStatus(userId: string, status: "pending" | "approved" | "rejected") {
         return BusinessModel.findOneAndUpdate({ userId }, { kybStatus: status }, { new: true });
     }

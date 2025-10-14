@@ -14,6 +14,7 @@ export interface IBusiness extends Document {
     address: string;
     ownershipDocumentUrl: string;
     signatories: ISignatory[];
+    description?: string;
     kybStatus: "pending" | "approved" | "rejected";
 }
 
@@ -32,6 +33,7 @@ const BusinessSchema = new Schema<IBusiness>(
                 idUrl: String,
             },
         ],
+        description: String,
         kybStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
     },
     { timestamps: true }

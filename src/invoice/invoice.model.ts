@@ -9,6 +9,7 @@ export interface InvoiceDoc extends Document {
     verifier?: string;
     corporateName?: string;
     corporateEmail?: string;
+    corporateDescription?: string;
     blobUrl?: string;
     tokenId?: string;
     tokenEvm?: string;
@@ -18,6 +19,12 @@ export interface InvoiceDoc extends Document {
     verifiedAt?: Date;
     hcsTxId?: string;
     tokenized?: boolean;
+    apy: { type: Number, default: 0.1 },
+    durationDays: { type: Number, default: 90 },
+    minInvestment: { type: Number, default: 100 },
+    maxInvestment: { type: Number, default: 10000 },
+    totalTarget: { type: Number, default: 100000 },
+    expiryDate: { type: Date },
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -36,6 +43,7 @@ const InvoiceSchema = new Schema<InvoiceDoc>(
         verifier: { type: String },
         corporateName: { type: String },
         corporateEmail: { type: String },
+        corporateDescription: { type: String },
         blobUrl: { type: String },
 
         // ✅ Tokenization fields
@@ -47,6 +55,12 @@ const InvoiceSchema = new Schema<InvoiceDoc>(
         verifiedAt: { type: Date },
         hcsTxId: { type: String },
         tokenized: { type: Boolean, default: false },
+        apy: { type: Number, default: 0.1 },
+        durationDays: { type: Number, default: 90 },
+        minInvestment: { type: Number, default: 100 },
+        maxInvestment: { type: Number, default: 10000 },
+        totalTarget: { type: Number, default: 100000 },
+        expiryDate: { type: Date },
     },
     { timestamps: true }
 );

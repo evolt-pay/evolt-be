@@ -17,15 +17,20 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ✅ Use fs to read the ABI file manually (no import attribute needed)
 const abiPath = path.resolve(__dirname, "../abi/VoltEscrow.json");
 const VoltEscrowArtifact = JSON.parse(fs.readFileSync(abiPath, "utf-8"));
 import InvoiceModel from "./invoice.model.js";
 import { v4 as uuidv4 } from "uuid";
 import UtilService from "../util/util.service.js";
 import dotenv from "dotenv";
-import businessService from "onboard/business/business.service.js";
+import businessService from "../onboard/business/business.service.js";
+import corporateService from "../corporate/corporate.service.js";
 dotenv.config();
 
 /* ====== ENV (keep SDK on TREASURY; EVM signer owns the escrow) ====== */
@@ -69,21 +74,86 @@ function compactTokenMeta(inv: any): string {
 }
 
 class InvoiceService {
+    // async createInvoice(userId: string, data: any, file: any) {
+    //     const business = await businessService.getBusinessProfile(userId);
+    //     if (!business) {
+    //         throw new Error("Business profile not found. Please complete KYB first.");
+    //     }
+
+    //     const blobUrl = await AzureUtil.uploadFileFromBuffer(file.buffer, `invoices/${uuidv4()}.pdf`);
+
+
+    //     const invoice = await InvoiceModel.create({ ...data, blobUrl, status: "pending" });
+
+    //     await UtilService.sendEmail(
+    //         data.corporateEmail,
+    //         `Verify Invoice ${data.invoiceNumber}`,
+    //         `<p>Hello,</p>
+    //    <p>You have a new invoice to verify from ${data.businessName || "a supplier"}.</p>
+    //    <p><a href="${process.env.APP_URL}/verify/${invoice._id}">Click here to verify invoice ${data.invoiceNumber}</a></p>`
+    //     );
+
+    //     return invoice;
+    // }
+
     async createInvoice(userId: string, data: any, file: any) {
+        // 1️⃣ Validate the vendor’s business
         const business = await businessService.getBusinessProfile(userId);
         if (!business) {
             throw new Error("Business profile not found. Please complete KYB first.");
         }
 
-        const blobUrl = await AzureUtil.uploadFileFromBuffer(file.buffer, `invoices/${uuidv4()}.pdf`);
-        const invoice = await InvoiceModel.create({ ...data, blobUrl, status: "pending" });
+        // 2️⃣ Validate the corporate reference by ID
+        if (!data.corporateId) {
+            throw new Error("Corporate ID is required.");
+        }
 
+        const corporate = await corporateService.getCorporateById(data.corporateId);
+        if (!corporate) {
+            throw new Error("Corporate not found in directory.");
+        }
+
+        // 3️⃣ Upload invoice file to Azure
+        const blobUrl = await AzureUtil.uploadFileFromBuffer(file.buffer, `invoices/${uuidv4()}.pdf`);
+
+        // 4️⃣ Create invoice record
+        const invoice = await InvoiceModel.create({
+            ...data,
+            businessId: business._id,
+            corporateId: corporate._id,
+            corporateName: corporate.name,
+            corporateEmail: corporate.email,
+            corporateDescription: corporate.description,
+            blobUrl,
+            status: "pending",
+            apy: data.apy || 0.1,
+            durationDays: data.durationDays || 90,
+            totalTarget: data.totalTarget || data.amount,
+            expiryDate: data.expiryDate || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        });
+
+        // const invoice = await InvoiceModel.create({
+        //     businessId: business._id,
+        //     corporateId: corporate._id,
+        //     corporateName: corporate.name,
+        //     corporateEmail: corporate.email,
+        //     corporateDescription: corporate.description,
+        //     invoiceNumber: data.invoiceNumber,
+        //     amount: data.amount,
+        //     currency: data.currency || "USD",
+        //     blobUrl,
+        //     status: "pending",
+        // });
+
+        // 5️⃣ Send invoice verification email
+        const contactName = corporate.contactPerson ? ` ${corporate.contactPerson}` : "";
         await UtilService.sendEmail(
-            data.corporateEmail,
-            `Verify Invoice ${data.invoiceNumber}`,
-            `<p>Hello,</p>
-       <p>You have a new invoice to verify from ${data.businessName || "a supplier"}.</p>
-       <p><a href="${process.env.APP_URL}/verify/${invoice._id}">Click here to verify invoice ${data.invoiceNumber}</a></p>`
+            corporate.email,
+            `Verify Invoice ${invoice.invoiceNumber}`,
+            `<p>Hello${contactName},</p>
+         <p>You have a new invoice to verify from <b>${business.businessName}</b>.</p>
+         <p><a href="${process.env.APP_URL}/verify/${invoice._id}">Click here to verify invoice ${invoice.invoiceNumber}</a></p>
+         <p>Thank you,<br/>${process.env.APP_NAME || "Evolt Finance Team"}</p>`
         );
 
         return invoice;

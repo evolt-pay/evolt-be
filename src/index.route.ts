@@ -4,11 +4,21 @@ import userRoutes from "./user/user.route.js";
 import investorRoutes from "./onboard/investor/investor.route.js";
 import businessRoutes from "./onboard/business/business.route.js";
 import invoiceRoutes from "./invoice/invoice.route.js";
+import investmentRoutes from "./investment/investment.route.js";
+import corporateRoutes from "./corporate/corporate.route.js";
+import poolRoutes from "./pool/pool.route.js";
 
 export const indexRoute = async (app: FastifyInstance) => {
     app.register(authRoutes, { prefix: "/api/v1/auth" });
 
+    app.register(corporateRoutes, { prefix: "/api/v1/corporate" });
+
+    app.register(investmentRoutes, { prefix: "/api/v1/investment" });
+
+    app.register(poolRoutes, { prefix: "/api/v1/pool" });
+
     app.register(invoiceRoutes, { prefix: '/api/v1/invoice' });
+
 
     app.register(userRoutes, { prefix: "/api/v1/user" });
 

@@ -32,6 +32,9 @@ class InvestmentController {
         const result = await InvestmentService.settleMaturedInvestments();
         reply.code(200).send({ message: "Matured investments settled", data: result });
     }
+
+
+
 }
 
 export default new InvestmentController();

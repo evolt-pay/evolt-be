@@ -1,5 +1,5 @@
 import { FastifyInstance, RouteOptions } from "fastify";
-import InvestmentController from "./investment.controller";
+import InvestmentController from "./investment.controller.js";
 import { RouteMethods } from "../util/util.dto.js";
 import {
     CreateInvestmentSchema,
@@ -7,7 +7,7 @@ import {
     GetInvestmentsByInvestorSchema,
     SettleInvestmentsSchema,
 } from "./investment.schema.js";
-import { authenticate } from "../auth/auth.middleware.js";
+import { authenticate } from "../middleware/index.js";
 
 export default async function investmentRoutes(app: FastifyInstance) {
     const routes: RouteOptions[] = [
@@ -38,7 +38,7 @@ export default async function investmentRoutes(app: FastifyInstance) {
             handler: (req, reply) => InvestmentController.settle(req, reply),
             preHandler: [authenticate],
             schema: SettleInvestmentsSchema,
-        },
+        }
     ];
 
     routes.forEach((r) => app.route(r));

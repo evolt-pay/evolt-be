@@ -2,6 +2,7 @@ import { PipelineStage } from "mongoose";
 import InvoiceModel from "../invoice/invoice.model.js";
 import InvestmentModel from "../investment/investment.model.js";
 import { BusinessModel } from "../onboard/business/business.model.js";
+import { CorporateModel } from "../corporate/corporate.model.js";
 import businessService from "../onboard/business/business.service.js";
 import invoiceService from "../invoice/invoice.service.js";
 
@@ -13,24 +14,23 @@ interface PoolListOptions {
 }
 
 class PoolService {
-    async listPools({
-        status = "all",
-        page = 1,
-        limit = 20,
-        search,
-    }: PoolListOptions) {
+    /** Fetch paginated list of investment pools (tokenized invoices) */
+    async listPools({ status = "all", page = 1, limit = 20, search }: PoolListOptions) {
         const skip = (page - 1) * limit;
         const match: Record<string, any> = { tokenized: true };
 
         if (search) {
             match.$or = [
                 { projectName: new RegExp(search, "i") },
-                { businessName: new RegExp(search, "i") },
+                { "biz.businessName": new RegExp(search, "i") },
+                { "corp.name": new RegExp(search, "i") },
             ];
         }
 
         const pipeline: PipelineStage[] = [
             { $match: match },
+
+            // 1️⃣ Join Business Profile
             {
                 $lookup: {
                     from: BusinessModel.collection.name,
@@ -40,6 +40,19 @@ class PoolService {
                 },
             },
             { $unwind: { path: "$biz", preserveNullAndEmptyArrays: true } },
+
+            // 2️⃣ Join Corporate Entity
+            {
+                $lookup: {
+                    from: CorporateModel.collection.name,
+                    localField: "corporateId",
+                    foreignField: "_id",
+                    as: "corp",
+                },
+            },
+            { $unwind: { path: "$corp", preserveNullAndEmptyArrays: true } },
+
+            // 3️⃣ Compute funded amount from Investment collection
             {
                 $lookup: {
                     from: InvestmentModel.collection.name,
@@ -60,9 +73,12 @@ class PoolService {
                     as: "agg",
                 },
             },
+
+            // 4️⃣ Derive computed fields
             {
                 $addFields: {
                     businessName: "$biz.businessName",
+                    corporateName: "$corp.name",
                     fundedAmount: { $ifNull: [{ $arrayElemAt: ["$agg.funded", 0] }, 0] },
                     fundingProgress: {
                         $min: [
@@ -96,6 +112,8 @@ class PoolService {
                     },
                 },
             },
+
+            // 5️⃣ Derive status dynamically
             {
                 $addFields: {
                     derivedStatus: {
@@ -109,11 +127,14 @@ class PoolService {
                     },
                 },
             },
+
+            // 6️⃣ Select output fields
             {
                 $project: {
                     _id: 1,
                     projectName: 1,
                     businessName: 1,
+                    corporateName: 1,
                     apy: 1,
                     minInvestment: 1,
                     maxInvestment: 1,
@@ -126,13 +147,14 @@ class PoolService {
                     blobUrl: 1,
                 },
             },
+
             { $sort: { createdAt: -1 } },
             { $skip: skip },
             { $limit: limit },
         ];
 
         if (status !== "all") {
-            pipeline.splice(6, 0, { $match: { derivedStatus: status } });
+            pipeline.splice(7, 0, { $match: { derivedStatus: status } });
         }
 
         const [items, totalCount] = await Promise.all([
@@ -143,11 +165,15 @@ class PoolService {
         return { page, limit, total: totalCount, items };
     }
 
+    /** Fetch full pool details (invoice + stats) */
     async getPoolDetails(invoiceId: string) {
-        const invoice = await invoiceService.getInvoiceById(invoiceId)
+        const invoice = await invoiceService.getInvoiceById(invoiceId);
         if (!invoice) throw new Error("Invoice not found");
 
-        const business = await businessService.getBusinessByd(invoice?.businessId!.toString());
+        const business = await businessService.getBusinessById(invoice.businessId.toString());
+        const corporate = invoice.corporateId
+            ? await CorporateModel.findById(invoice.corporateId).lean()
+            : null;
 
         const agg = await InvestmentModel.aggregate([
             { $match: { tokenId: invoice.tokenId } },
@@ -166,8 +192,8 @@ class PoolService {
             invoiceNumber: invoice.invoiceNumber,
             businessName: business?.businessName || "N/A",
             businessDescription: business?.description || "",
-            corporateName: invoice.corporateName,
-            corporateDescription: invoice.corporateDescription,
+            corporateName: corporate?.name || "N/A",
+            corporateDescription: corporate?.description || "",
             fundedAmount: poolStats.totalFunded,
             totalInvestors: poolStats.totalInvestors,
             apy: invoice.apy,

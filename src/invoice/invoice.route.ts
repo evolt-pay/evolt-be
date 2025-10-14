@@ -14,7 +14,7 @@ export default async function invoiceRoutes(app: FastifyInstance) {
         {
             method: RouteMethods.POST,
             url: "/",
-            // preHandler: [authenticate], // Enable when needed
+            preHandler: [authenticate],
             handler: (req, reply) => InvoiceController.createInvoice(req, reply),
             schema: CreateInvoiceSchema,
         },

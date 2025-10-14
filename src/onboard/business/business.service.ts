@@ -47,7 +47,7 @@ class BusinessService {
         return BusinessModel.findOne({ userId });
     }
 
-    async getBusinessByd(businessId: string): Promise<IBusiness | null> {
+    async getBusinessById(businessId: string): Promise<IBusiness | null> {
         return BusinessModel.findById(businessId);
     }
 

@@ -1,7 +1,6 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import AuthService from "./auth.service.js";
 import UtilService from "../util/util.service.js";
-import { ethers } from "ethers";
 
 import {
     ISendOtp,

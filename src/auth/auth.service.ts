@@ -10,8 +10,7 @@ import {
     ISetPassword,
     ILogin,
 } from "./auth.dto.js";
-import investmentService from "investment/investment.service.js";
-import investorService from "investor/investor.service.js";
+import investorService from "../investor/investor.service.js";
 
 export default class AuthService {
     private nonceStore = new Map<string, string>();

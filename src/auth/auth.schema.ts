@@ -138,7 +138,7 @@ export const InvestorVerifyWalletSchema: FastifySchema = {
     tags: ["auth", "investor"],
     body: {
         type: "object",
-        required: ["accountId", "signature"],
+        required: ["accountId", "signature", "message"],
         properties: {
             accountId: {
                 type: "string",

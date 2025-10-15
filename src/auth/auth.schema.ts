@@ -1,5 +1,9 @@
 import { FastifySchema } from "fastify";
 
+/* -------------------------------------------------------------------------- */
+/*                            EMAIL-BASED AUTH FLOW                           */
+/* -------------------------------------------------------------------------- */
+
 export const SendOtpSchema: FastifySchema = {
     description: "Send OTP to user email",
     tags: ["auth"],
@@ -11,7 +15,6 @@ export const SendOtpSchema: FastifySchema = {
         },
     },
 };
-
 
 export const SignupSchema: FastifySchema = {
     description: "Sign up (creates pending user and sends OTP to email)",
@@ -88,17 +91,24 @@ export const LoginSchema: FastifySchema = {
     },
 };
 
+/* -------------------------------------------------------------------------- */
+/*                           HEDERA WALLET-BASED AUTH                         */
+/* -------------------------------------------------------------------------- */
+
+const accountIdPattern = "^0\\.[0-9]+\\.[0-9]+$"; // Strict Hedera format (e.g., 0.0.12345)
+
+
 export const InvestorNonceSchema: FastifySchema = {
-    description: "Generate nonce for investor wallet verification (Web3 Auth)",
+    description: "Generate a unique nonce for investor Hedera account verification",
     tags: ["auth", "investor"],
     querystring: {
         type: "object",
-        required: ["walletAddress"],
+        required: ["accountId"],
         properties: {
-            walletAddress: {
+            accountId: {
                 type: "string",
-                pattern: "^0x[a-fA-F0-9]{40}$",
-                description: "Investor wallet address (EVM-compatible)",
+                pattern: accountIdPattern,
+                description: "Hedera account ID (e.g., 0.0.12345)",
             },
         },
     },
@@ -111,7 +121,10 @@ export const InvestorNonceSchema: FastifySchema = {
                 data: {
                     type: "object",
                     properties: {
-                        nonce: { type: "string", description: "Unique message nonce to be signed by wallet" },
+                        nonce: {
+                            type: "string",
+                            description: "Randomly generated challenge (nonce) to be signed by the wallet",
+                        },
                     },
                 },
             },
@@ -119,27 +132,28 @@ export const InvestorNonceSchema: FastifySchema = {
     },
 };
 
+
 export const InvestorVerifyWalletSchema: FastifySchema = {
-    description: "Verify investor wallet signature and issue JWT token",
+    description: "Verify Hedera wallet signature and issue JWT for authenticated sessions",
     tags: ["auth", "investor"],
     body: {
         type: "object",
-        required: ["walletAddress", "signature"],
+        required: ["accountId", "signature"],
         properties: {
-            walletAddress: {
+            accountId: {
                 type: "string",
-                pattern: "^0x[a-fA-F0-9]{40}$",
-                description: "Investor wallet address (EVM-compatible)",
+                pattern: accountIdPattern,
+                description: "Hedera account ID (e.g., 0.0.12345)",
             },
             signature: {
                 type: "string",
-                description: "Signature of the nonce message from the investor’s wallet",
+                description: "Signature of the nonce message from the Hedera wallet",
             },
         },
     },
     response: {
         200: {
-            description: "Successful wallet verification and token issuance",
+            description: "Successful signature verification and JWT token issuance",
             type: "object",
             properties: {
                 success: { type: "boolean" },
@@ -149,8 +163,42 @@ export const InvestorVerifyWalletSchema: FastifySchema = {
                     properties: {
                         token: {
                             type: "string",
-                            description: "JWT authentication token for investor wallet session",
+                            description: "JWT token for authenticated investor session",
                         },
+                    },
+                },
+            },
+        },
+    },
+};
+
+
+export const ValidateTokenSchema: FastifySchema = {
+    description: "Validate JWT token to confirm session validity",
+    tags: ["auth", "investor"],
+    headers: {
+        type: "object",
+        properties: {
+            authorization: {
+                type: "string",
+                description: "Bearer JWT token",
+            },
+        },
+        required: ["authorization"],
+    },
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
+                data: {
+                    type: "object",
+                    properties: {
+                        valid: { type: "boolean" },
+                        accountId: { type: "string" },
+                        evmAddress: { type: "string" },
+                        expiresAt: { type: "string" },
                     },
                 },
             },

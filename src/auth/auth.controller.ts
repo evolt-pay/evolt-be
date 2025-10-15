@@ -53,22 +53,28 @@ class AuthController {
         reply.status(200).send(UtilService.customResponse(true, "Login successful", { token, role }));
     };
 
-    /* ---------------- WALLET AUTH (Investors only) ---------------- */
+    /* ---- Hedera Wallet Auth Flow ---- */
 
-    getNonce = async (req: FastifyRequest, reply: FastifyReply) => {
-        const { walletAddress } = req.query as any;
-        if (!walletAddress) {
-            return reply.code(400).send(UtilService.customResponse(false, "Wallet address required"));
-        }
+    // Step 1: Generate nonce
+    getChallenge = async (req: FastifyRequest, reply: FastifyReply) => {
+        const { accountId } = req.query as any;
+        if (!accountId)
+            return reply.code(400).send(UtilService.customResponse(false, "Missing accountId"));
 
-        const nonce = this.authService.generateNonce(walletAddress);
-        reply.send(UtilService.customResponse(true, "Nonce generated", { nonce }));
+        const { nonce } = await this.authService.generateChallenge(accountId);
+        reply.send(UtilService.customResponse(true, "Challenge generated", { nonce }));
     };
 
-    verifyInvestorWallet = async (req: FastifyRequest, reply: FastifyReply) => {
-        const { walletAddress, signature } = req.body as any;
-        const { token } = await this.authService.verifyInvestorWallet(walletAddress, signature);
-        reply.send(UtilService.customResponse(true, "Investor wallet verified", { token }));
+    // Step 2: Verify signature
+    verifySignature = async (req: FastifyRequest, reply: FastifyReply) => {
+        const { accountId, signature } = req.body as any;
+        if (!accountId || !signature)
+            return reply
+                .code(400)
+                .send(UtilService.customResponse(false, "Missing accountId or signature"));
+
+        const { token } = await this.authService.verifySignature(accountId, 'message', signature);
+        reply.send(UtilService.customResponse(true, "Wallet verified", { token }));
     };
 
 

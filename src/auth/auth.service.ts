@@ -1,29 +1,24 @@
 import { FastifyInstance } from "fastify";
 import { httpErrors } from "@fastify/sensible";
-import { ethers } from "ethers";
-import UserService from "../user/user.service.js";
-import UtilService from "../util/util.service.js";
-import {
-    ISendOtp,
-    ISignup,
-    IVerifyOtp,
-    ISetPassword,
-    ILogin,
-} from "./auth.dto.js";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import investorService from "../investor/investor.service.js";
 
+
+import UserService from "../user/user.service.js";
+import UtilService from "../util/util.service.js";
+import { ISendOtp, ISignup, IVerifyOtp, ISetPassword, ILogin } from "./auth.dto.js";
+import { verifyHederaSignature } from "@util/util.hedera.js";
+
 export default class AuthService {
-    private nonceStore = new Map<string, string>();
+    private challengeStore = new Map<string, string>();
 
     constructor(private app: FastifyInstance) { }
 
-
+    /* ---------------- EMAIL AUTH FLOW (as before) ---------------- */
     async sendOtp({ email }: ISendOtp): Promise<void> {
         const user = await UserService.fetchOneUser({ email });
-
-        if (user && user.isVerified) {
-            throw httpErrors.badRequest("Email is already registered");
-        }
+        if (user && user.isVerified) throw httpErrors.badRequest("Email already registered");
 
         const otp = UtilService.generateOtp();
         const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
@@ -41,14 +36,12 @@ export default class AuthService {
         await UtilService.sendEmail(email, "Your OTP Code", `Your OTP is ${otp}`);
     }
 
-
     async signup(data: ISignup): Promise<void> {
         const { email, password, accountType } = data;
         const existingUser = await UserService.fetchOneUser({ email });
 
-        if (existingUser && existingUser.isVerified) {
+        if (existingUser && existingUser.isVerified)
             throw httpErrors.badRequest("Email already registered");
-        }
 
         const otp = UtilService.generateOtp();
         const otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000);
@@ -72,7 +65,6 @@ export default class AuthService {
         await UtilService.sendEmail(email, "Your OTP Code", `Your OTP is ${otp}`);
     }
 
-
     async verifyOtp({ email, otp }: IVerifyOtp): Promise<{ token: string; accountType: string }> {
         const valid = await UserService.verifyOtp(email, otp);
         if (!valid) throw httpErrors.badRequest("Invalid or expired OTP");
@@ -94,11 +86,9 @@ export default class AuthService {
         return { token, accountType: user.role };
     }
 
-
     async setPassword(userId: string, { password }: ISetPassword): Promise<void> {
         await UserService.setPassword(userId, password);
     }
-
 
     async login({ email, password }: ILogin): Promise<{ token: string; role: string }> {
         const user = await UserService.fetchOneUserWithPassword({ email });
@@ -116,39 +106,93 @@ export default class AuthService {
         return { token, role: user.role };
     }
 
+    /* ---------------- HEDERA WALLET AUTH ---------------- */
 
-    /* -------------------- INVESTOR WALLET AUTH FLOW -------------------- */
+    /** Step 1 — Create a random challenge (nonce) */
+    async generateChallenge(accountId: string): Promise<{ nonce: string }> {
+        if (!accountId) throw httpErrors.badRequest("Missing accountId");
 
-    generateNonce(walletAddress: string): string {
-        const nonce = Math.floor(Math.random() * 1e6).toString(36);
-        this.nonceStore.set(walletAddress.toLowerCase(), nonce);
-        return nonce;
+        const nonce = crypto.randomBytes(32).toString("hex");
+
+        await this.app.redis.setex(`nonce:${accountId}`, 300, nonce);
+
+        return { nonce };
     }
 
-    async verifyInvestorWallet(walletAddress: string, signature: string): Promise<{ token: string }> {
-        const nonce = this.nonceStore.get(walletAddress.toLowerCase());
-        if (!nonce) throw new Error("Nonce not found or expired");
 
-        const message = `Sign this message to verify your wallet as an Investor on Volt.\nNonce: ${nonce}`;
-        const recovered = ethers.verifyMessage(message, signature);
+    /** Step 2 — Verify Hedera wallet signature */
+    async verifySignature(
+        accountId: string,
+        message: string,
+        signature: string
+    ): Promise<{ token: string }> {
+        const nonce = await this.app.redis.get(`nonce:${accountId}`);
 
-        if (recovered.toLowerCase() !== walletAddress.toLowerCase()) {
-            throw new Error("Invalid signature");
-        }
+        if (!nonce || nonce !== message)
+            throw httpErrors.badRequest("Challenge expired or does not match");
 
-        this.nonceStore.delete(walletAddress.toLowerCase());
+        // Burn nonce
+        await this.app.redis.del(`nonce:${accountId}`);
 
-        const investor = await investorService.connectWallet(walletAddress);
+        // Fetch public key from mirror node
+        const response = await fetch(
+            `https://testnet.mirrornode.hedera.com/api/v1/accounts/${accountId}`
+        );
+        if (!response.ok) throw httpErrors.badRequest("Failed to fetch Hedera account data");
 
-        const token = this.app.jwt.sign(
+        const accountData = await response.json();
+        const rawKey =
+            accountData.key?._key || accountData.key?.key || accountData.key;
+
+        if (!rawKey) throw httpErrors.badRequest("Could not retrieve public key");
+
+        // Add DER header for Hedera ED25519 format
+        const publicKeyString = "302a300506032b6570032100" + rawKey;
+
+        const signatureBytes = Buffer.from(signature, "base64");
+
+        const isValid = verifyHederaSignature(message, signatureBytes, publicKeyString);
+        if (!isValid) throw httpErrors.unauthorized("Invalid Hedera signature");
+
+        // Optional: store EVM address equivalent for tracking
+        const evmAddress = this.accountIdToSolidityAddress(accountId);
+
+        // Issue JWT token
+        const investor = await investorService.connectWallet(accountId, {
+            network: "hedera",
+            evmAddress,
+        });
+
+        const token = jwt.sign(
             {
                 investorId: (investor as any)._id,
-                walletAddress,
+                accountId,
+                evmAddress,
                 role: "investor",
             },
-            { expiresIn: "2h" }
+            process.env.JWT_SECRET!,
+            { expiresIn: "7d" }
         );
 
+        console.log("✅ Verified Hedera signature successfully");
         return { token };
+    }
+
+
+    /** Step 3 — Convert Hedera Account ID → Solidity Address */
+    private accountIdToSolidityAddress(accountId: string): string {
+        const parts = accountId.split(".");
+        if (parts.length !== 3) throw httpErrors.badRequest("Invalid Hedera Account ID");
+
+        const shard = BigInt(parts[0]);
+        const realm = BigInt(parts[1]);
+        const num = BigInt(parts[2]);
+
+        return (
+            "0x" +
+            shard.toString(16).padStart(8, "0") +
+            realm.toString(16).padStart(16, "0") +
+            num.toString(16).padStart(16, "0")
+        ).toLowerCase();
     }
 }

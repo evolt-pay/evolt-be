@@ -2,14 +2,18 @@ import { InvestorModel, IInvestor } from "./investor.model.js";
 import InvestmentModel from "../investment/investment.model.js";
 
 class InvestorService {
-    async connectWallet(walletAddress: string): Promise<IInvestor> {
-        if (!walletAddress) throw new Error("Wallet address is required");
-
+    async connectWallet(walletAddress: string, extraData?: Partial<IInvestor>) {
         let investor = await InvestorModel.findOne({ walletAddress });
         if (!investor) {
-            investor = await InvestorModel.create({ walletAddress });
+            investor = new InvestorModel({
+                walletAddress,
+                ...extraData,
+            });
+        } else if (extraData) {
+            Object.assign(investor, extraData);
         }
 
+        await investor.save();
         return investor;
     }
 

@@ -10,7 +10,7 @@ import fastifyMultipart from '@fastify/multipart';
 import fastifyJwt from '@fastify/jwt';
 import { websocketPlugin } from "./websocket.plugin.js";
 import fastifyWebsocket from "@fastify/websocket";
-// import fastifyRedis from "@fastify/redis";
+import fastifyRedis from "@fastify/redis";
 import fastifyCors from "@fastify/cors";
 import { indexRoute } from '../index.route.js';
 import { errorHandlerPlugin } from '../config/error-handler.js';
@@ -46,12 +46,10 @@ export async function corePlugin(
 
     app.register(fastifyJwt, config.jwt);
 
-    // app.register(fastifyRedis, {
-    //     host: process.env.REDIS_HOST || "127.0.0.1",
-    //     port: +(process.env.REDIS_PORT || 6379),
-    //     password: process.env.REDIS_PASSWORD || undefined,
-    //     family: 4,
-    // });
+    app.register(fastifyRedis, {
+        url: process.env.REDIS_URL
+    });
+
 
 
     app.register(errorHandlerPlugin);

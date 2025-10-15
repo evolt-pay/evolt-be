@@ -2,6 +2,9 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IInvestor extends Document {
     walletAddress: string;
+    publicKey?: string;
+    evmAddress?: string;
+    network?: "hedera" | "evm";
     kycProofCid?: string;
     kycProvider?: string;
     approved?: boolean;
@@ -11,8 +14,11 @@ export interface IInvestor extends Document {
 const InvestorSchema = new Schema<IInvestor>(
     {
         walletAddress: { type: String, required: true, unique: true },
-        kycProofCid: String,
-        kycProvider: String,
+        publicKey: { type: String },
+        evmAddress: { type: String },
+        network: { type: String, enum: ["hedera", "evm"], default: "hedera" },
+        kycProofCid: { type: String },
+        kycProvider: { type: String },
         approved: { type: Boolean, default: false },
         joinedAt: { type: Date, default: Date.now },
     },

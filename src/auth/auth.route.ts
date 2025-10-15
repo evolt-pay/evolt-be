@@ -32,13 +32,13 @@ export default function authRoutes(app: FastifyInstance) {
             method: "GET",
             url: "/investor/nonce",
             schema: InvestorNonceSchema,
-            handler: controller.getNonce,
+            handler: controller.getChallenge,
         },
         {
             method: "POST",
             url: "/investor/verify-wallet",
             schema: InvestorVerifyWalletSchema,
-            handler: controller.verifyInvestorWallet,
+            handler: controller.verifySignature,
         },
     ];
 

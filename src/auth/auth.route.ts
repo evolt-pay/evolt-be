@@ -17,26 +17,26 @@ export default function authRoutes(app: FastifyInstance) {
     const controller = new AuthController(app);
 
     const routes: RouteOptions[] = [
-        { method: RouteMethods.POST, url: "/auth/send-otp", handler: controller.sendOtp, schema: SendOtpSchema },
+        { method: RouteMethods.POST, url: "/send-otp", handler: controller.sendOtp, schema: SendOtpSchema },
         {
             method: RouteMethods.POST,
-            url: "/auth/signup",
+            url: "/signup",
             schema: SignupSchema,
             preHandler: [validatePasswordsMatch],
             handler: controller.signup,
         },
-        { method: RouteMethods.POST, url: "/auth/verify-otp", handler: controller.verifyOtp, schema: VerifyOtpSchema },
-        { method: RouteMethods.POST, url: "/auth/set-password", handler: controller.setPassword, preHandler: [authenticate], schema: SetPasswordSchema },
-        { method: RouteMethods.POST, url: "/auth/login", handler: controller.login, schema: LoginSchema },
+        { method: RouteMethods.POST, url: "/verify-otp", handler: controller.verifyOtp, schema: VerifyOtpSchema },
+        { method: RouteMethods.POST, url: "/set-password", handler: controller.setPassword, preHandler: [authenticate], schema: SetPasswordSchema },
+        { method: RouteMethods.POST, url: "/login", handler: controller.login, schema: LoginSchema },
         {
             method: "GET",
-            url: "/auth/investor/nonce",
+            url: "/investor/nonce",
             schema: InvestorNonceSchema,
             handler: controller.getNonce,
         },
         {
             method: "POST",
-            url: "/auth/investor/verify-wallet",
+            url: "/investor/verify-wallet",
             schema: InvestorVerifyWalletSchema,
             handler: controller.verifyInvestorWallet,
         },

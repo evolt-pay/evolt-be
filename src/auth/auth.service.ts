@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { httpErrors } from "@fastify/sensible";
+import { ethers } from "ethers";
 import UserService from "../user/user.service.js";
 import UtilService from "../util/util.service.js";
 import {
@@ -9,8 +10,12 @@ import {
     ISetPassword,
     ILogin,
 } from "./auth.dto.js";
+import investmentService from "investment/investment.service.js";
+import investorService from "investor/investor.service.js";
 
 export default class AuthService {
+    private nonceStore = new Map<string, string>();
+
     constructor(private app: FastifyInstance) { }
 
 
@@ -110,5 +115,41 @@ export default class AuthService {
         });
 
         return { token, role: user.role };
+    }
+
+
+    /* -------------------- INVESTOR WALLET AUTH FLOW -------------------- */
+
+    generateNonce(walletAddress: string): string {
+        const nonce = Math.floor(Math.random() * 1e6).toString(36);
+        this.nonceStore.set(walletAddress.toLowerCase(), nonce);
+        return nonce;
+    }
+
+    async verifyInvestorWallet(walletAddress: string, signature: string): Promise<{ token: string }> {
+        const nonce = this.nonceStore.get(walletAddress.toLowerCase());
+        if (!nonce) throw new Error("Nonce not found or expired");
+
+        const message = `Sign this message to verify your wallet as an Investor on Volt.\nNonce: ${nonce}`;
+        const recovered = ethers.verifyMessage(message, signature);
+
+        if (recovered.toLowerCase() !== walletAddress.toLowerCase()) {
+            throw new Error("Invalid signature");
+        }
+
+        this.nonceStore.delete(walletAddress.toLowerCase());
+
+        const investor = await investorService.connectWallet(walletAddress);
+
+        const token = this.app.jwt.sign(
+            {
+                investorId: (investor as any)._id,
+                walletAddress,
+                role: "investor",
+            },
+            { expiresIn: "2h" }
+        );
+
+        return { token };
     }
 }

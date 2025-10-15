@@ -3,19 +3,21 @@ import { FastifySchema } from "fastify";
 export const CreateCorporateSchema: FastifySchema = {
     description: "Create a new corporate record (e.g. Honeywell, Dangote)",
     tags: ["corporate"],
-    body: {
-        type: "object",
-        required: ["name", "email"],
-        properties: {
-            name: { type: "string" },
-            email: { type: "string", format: "email" },
-            phone: { type: "string" },
-            contactPerson: { type: "string" },
-            description: { type: "string" },
-            logoUrl: { type: "string" },
-            verified: { type: "boolean" },
-        },
-    },
+    consumes: ['multipart/form-data'],
+    summary: "Upload invoice PDF and create invoice record",
+    // body: {
+    //     type: "object",
+    //     required: ["name", "email"],
+    //     properties: {
+    //         name: { type: "string" },
+    //         email: { type: "string", format: "email" },
+    //         phone: { type: "string" },
+    //         contactPerson: { type: "string" },
+    //         description: { type: "string" },
+    //         logoUrl: { type: "string" },
+    //         verified: { type: "boolean" },
+    //     },
+    // },
 };
 
 export const GetAllCorporatesSchema: FastifySchema = {

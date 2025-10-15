@@ -87,3 +87,73 @@ export const LoginSchema: FastifySchema = {
         },
     },
 };
+
+export const InvestorNonceSchema: FastifySchema = {
+    description: "Generate nonce for investor wallet verification (Web3 Auth)",
+    tags: ["auth", "investor"],
+    querystring: {
+        type: "object",
+        required: ["walletAddress"],
+        properties: {
+            walletAddress: {
+                type: "string",
+                pattern: "^0x[a-fA-F0-9]{40}$",
+                description: "Investor wallet address (EVM-compatible)",
+            },
+        },
+    },
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
+                data: {
+                    type: "object",
+                    properties: {
+                        nonce: { type: "string", description: "Unique message nonce to be signed by wallet" },
+                    },
+                },
+            },
+        },
+    },
+};
+
+export const InvestorVerifyWalletSchema: FastifySchema = {
+    description: "Verify investor wallet signature and issue JWT token",
+    tags: ["auth", "investor"],
+    body: {
+        type: "object",
+        required: ["walletAddress", "signature"],
+        properties: {
+            walletAddress: {
+                type: "string",
+                pattern: "^0x[a-fA-F0-9]{40}$",
+                description: "Investor wallet address (EVM-compatible)",
+            },
+            signature: {
+                type: "string",
+                description: "Signature of the nonce message from the investor’s wallet",
+            },
+        },
+    },
+    response: {
+        200: {
+            description: "Successful wallet verification and token issuance",
+            type: "object",
+            properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
+                data: {
+                    type: "object",
+                    properties: {
+                        token: {
+                            type: "string",
+                            description: "JWT authentication token for investor wallet session",
+                        },
+                    },
+                },
+            },
+        },
+    },
+};

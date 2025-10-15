@@ -11,7 +11,7 @@ export default async function corporateRoutes(app: FastifyInstance) {
             url: "/",
             handler: (req, reply) => CorporateController.create(req, reply),
             schema: CreateCorporateSchema,
-            preHandler: [authenticate],
+            // preHandler: [authenticate],
         },
         {
             method: RouteMethods.GET,

@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import BusinessService from "./business.service.js";
-import UtilService from "../../util/util.service.js";
+import UtilService from "../util/util.service.js";
 
 class BusinessController {
     async createBusinessProfile(req: FastifyRequest, reply: FastifyReply) {

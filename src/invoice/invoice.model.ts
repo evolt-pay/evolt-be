@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface InvoiceDoc extends Document {
     businessId: mongoose.Types.ObjectId;
-    corporateId: mongoose.Types.ObjectId; // ✅ normalized reference
+    corporateId: mongoose.Types.ObjectId;
     invoiceNumber: string;
     amount: number;
     currency?: string;

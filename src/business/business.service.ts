@@ -1,6 +1,6 @@
 import { BusinessModel, IBusiness } from "./business.model.js";
-import { AzureUtil } from "../../util/azure.util.js";
-import { UserModel } from "../../user/user.model.js";
+import { AzureUtil } from "../util/azure.util.js";
+import { UserModel } from "../user/user.model.js";
 
 class BusinessService {
     async uploadToAzure(buffer: Buffer, filename: string, mimetype?: string) {

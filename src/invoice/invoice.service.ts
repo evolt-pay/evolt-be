@@ -21,7 +21,7 @@ import dotenv from "dotenv";
 
 import InvoiceModel from "./invoice.model.js";
 import UtilService from "../util/util.service.js";
-import businessService from "../onboard/business/business.service.js";
+import businessService from "../business/business.service.js";
 import corporateService from "../corporate/corporate.service.js";
 
 dotenv.config();

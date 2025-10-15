@@ -6,9 +6,12 @@ import {
     VerifyOtpSchema,
     SetPasswordSchema,
     LoginSchema,
+    InvestorNonceSchema,
+    InvestorVerifyWalletSchema
 } from "./auth.schema.js";
 import { RouteMethods } from "../util/util.dto.js";
 import { authenticate } from "../middleware/index.js";
+import { validatePasswordsMatch } from "./auth.middleware.js";
 
 export default function authRoutes(app: FastifyInstance) {
     const controller = new AuthController(app);
@@ -19,20 +22,24 @@ export default function authRoutes(app: FastifyInstance) {
             method: RouteMethods.POST,
             url: "/auth/signup",
             schema: SignupSchema,
-            preHandler: async (req, reply) => {
-                const { password, confirmPassword } = req.body as any;
-                if (password !== confirmPassword) {
-                    return reply.status(400).send({
-                        success: false,
-                        message: "Passwords do not match",
-                    });
-                }
-            },
+            preHandler: [validatePasswordsMatch],
             handler: controller.signup,
         },
         { method: RouteMethods.POST, url: "/auth/verify-otp", handler: controller.verifyOtp, schema: VerifyOtpSchema },
         { method: RouteMethods.POST, url: "/auth/set-password", handler: controller.setPassword, preHandler: [authenticate], schema: SetPasswordSchema },
         { method: RouteMethods.POST, url: "/auth/login", handler: controller.login, schema: LoginSchema },
+        {
+            method: "GET",
+            url: "/auth/investor/nonce",
+            schema: InvestorNonceSchema,
+            handler: controller.getNonce,
+        },
+        {
+            method: "POST",
+            url: "/auth/investor/verify-wallet",
+            schema: InvestorVerifyWalletSchema,
+            handler: controller.verifyInvestorWallet,
+        },
     ];
 
     routes.forEach((route) => app.route(route));

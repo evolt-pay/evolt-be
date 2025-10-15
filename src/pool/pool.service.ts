@@ -1,9 +1,9 @@
 import { PipelineStage } from "mongoose";
 import InvoiceModel from "../invoice/invoice.model.js";
 import InvestmentModel from "../investment/investment.model.js";
-import { BusinessModel } from "../onboard/business/business.model.js";
+import { BusinessModel } from "../business/business.model.js";
 import { CorporateModel } from "../corporate/corporate.model.js";
-import businessService from "../onboard/business/business.service.js";
+import businessService from "../business/business.service.js";
 import invoiceService from "../invoice/invoice.service.js";
 
 interface PoolListOptions {
@@ -14,7 +14,6 @@ interface PoolListOptions {
 }
 
 class PoolService {
-    /** Fetch paginated list of investment pools (tokenized invoices) */
     async listPools({ status = "all", page = 1, limit = 20, search }: PoolListOptions) {
         const skip = (page - 1) * limit;
         const match: Record<string, any> = { tokenized: true };
@@ -52,7 +51,7 @@ class PoolService {
             },
             { $unwind: { path: "$corp", preserveNullAndEmptyArrays: true } },
 
-            // 3️⃣ Compute funded amount from Investment collection
+            // 3️⃣ Compute total funded amount from Investment collection
             {
                 $lookup: {
                     from: InvestmentModel.collection.name,
@@ -74,12 +73,31 @@ class PoolService {
                 },
             },
 
-            // 4️⃣ Derive computed fields
+            // 4️⃣ Compute fundedAmount, business/corporate names, and daysLeft
             {
                 $addFields: {
                     businessName: "$biz.businessName",
                     corporateName: "$corp.name",
                     fundedAmount: { $ifNull: [{ $arrayElemAt: ["$agg.funded", 0] }, 0] },
+                    daysLeft: {
+                        $max: [
+                            0,
+                            {
+                                $ceil: {
+                                    $divide: [
+                                        { $subtract: ["$expiryDate", new Date()] },
+                                        1000 * 60 * 60 * 24, // ms → days
+                                    ],
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+
+            // 5️⃣ Compute fundingProgress and derived status (separate stage for accuracy)
+            {
+                $addFields: {
                     fundingProgress: {
                         $min: [
                             {
@@ -97,30 +115,22 @@ class PoolService {
                             100,
                         ],
                     },
-                    daysLeft: {
-                        $max: [
-                            0,
-                            {
-                                $ceil: {
-                                    $divide: [
-                                        { $subtract: ["$expiryDate", new Date()] },
-                                        1000 * 60 * 60 * 24,
-                                    ],
-                                },
-                            },
-                        ],
-                    },
                 },
             },
 
-            // 5️⃣ Derive status dynamically
             {
                 $addFields: {
                     derivedStatus: {
                         $switch: {
                             branches: [
-                                { case: { $gte: ["$fundingProgress", 100] }, then: "fully_funded" },
-                                { case: { $gt: ["$fundedAmount", 0] }, then: "funded" },
+                                {
+                                    case: { $gte: ["$fundingProgress", 100] },
+                                    then: "fully_funded",
+                                },
+                                {
+                                    case: { $gt: ["$fundedAmount", 0] },
+                                    then: "funded",
+                                },
                             ],
                             default: "funding",
                         },
@@ -128,7 +138,6 @@ class PoolService {
                 },
             },
 
-            // 6️⃣ Select output fields
             {
                 $project: {
                     _id: 1,
@@ -165,7 +174,6 @@ class PoolService {
         return { page, limit, total: totalCount, items };
     }
 
-    /** Fetch full pool details (invoice + stats) */
     async getPoolDetails(invoiceId: string) {
         const invoice = await invoiceService.getInvoiceById(invoiceId);
         if (!invoice) throw new Error("Invoice not found");

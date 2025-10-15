@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import AuthService from "./auth.service.js";
 import UtilService from "../util/util.service.js";
+import { ethers } from "ethers";
+
 import {
     ISendOtp,
     ISignup,
@@ -51,6 +53,26 @@ class AuthController {
         const { token, role } = await this.authService.login(body);
         reply.status(200).send(UtilService.customResponse(true, "Login successful", { token, role }));
     };
+
+    /* ---------------- WALLET AUTH (Investors only) ---------------- */
+
+    getNonce = async (req: FastifyRequest, reply: FastifyReply) => {
+        const { walletAddress } = req.query as any;
+        if (!walletAddress) {
+            return reply.code(400).send(UtilService.customResponse(false, "Wallet address required"));
+        }
+
+        const nonce = this.authService.generateNonce(walletAddress);
+        reply.send(UtilService.customResponse(true, "Nonce generated", { nonce }));
+    };
+
+    verifyInvestorWallet = async (req: FastifyRequest, reply: FastifyReply) => {
+        const { walletAddress, signature } = req.body as any;
+        const { token } = await this.authService.verifyInvestorWallet(walletAddress, signature);
+        reply.send(UtilService.customResponse(true, "Investor wallet verified", { token }));
+    };
+
+
 }
 
 export default AuthController;

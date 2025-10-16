@@ -8,23 +8,21 @@ import { PublicKey } from "@hashgraph/sdk";
  * @returns {boolean}
  */
 export function verifyHederaSignature(
-    message: string,
-    signature: Uint8Array | string,
-    publicKeyString: string
+    publicKey: string,
+    signature: string,
+    message: string
 ): boolean {
     try {
-        const publicKey = PublicKey.fromString(publicKeyString);
-        const messageBytes = Buffer.from(message, "utf8");
-
-        const signatureBytes =
-            typeof signature === "string" ? Buffer.from(signature, "base64") : signature;
-
-        const isValid = publicKey.verify(messageBytes, signatureBytes);
-
-        console.log(`🔍 Signature valid: ${isValid}`);
-        return isValid;
+        const publicKeyBytes = Buffer.from(publicKey, "base64");
+        const signatureBytes = Buffer.from(signature, "base64");
+        // 2️⃣ Convert to Hedera PublicKey instance
+        const pubKey = PublicKey.fromBytes(publicKeyBytes);
+        const prefix = "\x19Hedera Signed Message:\n";
+        const messageBytes = Buffer.from(prefix + message.length + message, "utf8");
+        console.log(messageBytes, 'messageBytes')
+        return pubKey.verify(messageBytes, signatureBytes);
     } catch (err) {
-        console.error("❌ Signature verification failed:", err);
+        console.log("❌ Signature verification failed:", err);
         return false;
     }
 }

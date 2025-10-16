@@ -7,7 +7,7 @@ import {
     SetPasswordSchema,
     LoginSchema,
     InvestorNonceSchema,
-    InvestorVerifyWalletSchema
+    InvestorVerifySignatureSchema
 } from "./auth.schema.js";
 import { RouteMethods } from "../util/util.dto.js";
 import { authenticate } from "../middleware/index.js";
@@ -30,14 +30,14 @@ export default function authRoutes(app: FastifyInstance) {
         { method: RouteMethods.POST, url: "/login", handler: controller.login, schema: LoginSchema },
         {
             method: "GET",
-            url: "/investor/nonce",
+            url: "/nonce",
             schema: InvestorNonceSchema,
             handler: controller.getChallenge,
         },
         {
             method: "POST",
-            url: "/investor/verify-wallet",
-            schema: InvestorVerifyWalletSchema,
+            url: "/verify-signature",
+            schema: InvestorVerifySignatureSchema,
             handler: controller.verifySignature,
         },
     ];

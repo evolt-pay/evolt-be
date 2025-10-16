@@ -1,8 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { httpErrors } from "@fastify/sensible";
-import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import investorService from "../investor/investor.service.js";
+import { PublicKey } from "@hashgraph/sdk";
 
 
 import UserService from "../user/user.service.js";
@@ -109,50 +109,74 @@ export default class AuthService {
     /* ---------------- HEDERA WALLET AUTH ---------------- */
 
     /** Step 1 — Create a random challenge (nonce) */
-    async generateChallenge(accountId: string): Promise<{ nonce: string }> {
+    async generateChallenge(accountId: string): Promise<{ nonce: string; }> {
         if (!accountId) throw httpErrors.badRequest("Missing accountId");
 
         const nonce = crypto.randomBytes(32).toString("hex");
+        const key = `nonce:${accountId}`;
 
-        await this.app.redis.setex(`nonce:${accountId}`, 300, nonce);
-
+        // ioredis supports 'EX' seconds. We can also add 'NX' if you want to avoid overwriting.
+        // If you prefer idempotency, omit 'NX' and just overwrite.
+        // With NX: returns 'OK' on success or null if key already exists.
+        const setRes = await this.app.redis.set(key, nonce, "EX", 300);
+        if (setRes !== "OK") {
+            // Extremely rare; handle defensively.
+            await this.app.redis.del(key);
+            await this.app.redis.set(key, nonce, "EX", 300);
+        }
         return { nonce };
+    }
+
+    private async getAndDeleteNonce(key: string): Promise<string | null> {
+        const client: any = this.app.redis as any;
+
+        if (typeof client.getdel === "function") {
+            return await client.getdel(key);
+        }
+
+        const val = await this.app.redis.get(key);
+        if (val) await this.app.redis.del(key);
+        return val;
     }
 
 
     /** Step 2 — Verify Hedera wallet signature */
     async verifySignature(
+        publicKey: string,
         accountId: string,
         message: string,
         signature: string
     ): Promise<{ token: string }> {
-        const nonce = await this.app.redis.get(`nonce:${accountId}`);
 
-        if (!nonce || nonce !== message)
-            throw httpErrors.badRequest("Challenge expired or does not match");
+        const key = `nonce:${accountId}`;
 
-        // Burn nonce
-        await this.app.redis.del(`nonce:${accountId}`);
+        // const stored = await this.getAndDeleteNonce(key);
+        // if (!stored || stored !== message) {
+        //     throw httpErrors.badRequest("Challenge expired or does not match");
+        // }
+        // console.log(publicKey, publicKey)
+        // console.log(stored, "stored, message")
+        // console.log(message, 'message')
+        // console.log(signature, 'signature')
 
-        // Fetch public key from mirror node
-        const response = await fetch(
-            `https://testnet.mirrornode.hedera.com/api/v1/accounts/${accountId}`
-        );
-        if (!response.ok) throw httpErrors.badRequest("Failed to fetch Hedera account data");
-
-        const accountData = await response.json();
-        const rawKey =
-            accountData.key?._key || accountData.key?.key || accountData.key;
-
-        if (!rawKey) throw httpErrors.badRequest("Could not retrieve public key");
-
-        // Add DER header for Hedera ED25519 format
-        const publicKeyString = "302a300506032b6570032100" + rawKey;
-
+        const publicKeyBytes = Buffer.from(publicKey, "base64");
         const signatureBytes = Buffer.from(signature, "base64");
+        // 2️⃣ Convert to Hedera PublicKey instance
+        const pubKey = PublicKey.fromBytes(publicKeyBytes);
+        const prefix = "\x19Hedera Signed Message:\n";
+        const messageBytes = Buffer.from(message, "utf8");
 
-        const isValid = verifyHederaSignature(message, signatureBytes, publicKeyString);
-        if (!isValid) throw httpErrors.unauthorized("Invalid Hedera signature");
+        console.log("Backend message bytes:", Array.from(messageBytes).map(b => b.toString(16)));
+        console.log("Backend signature bytes:", Array.from(signatureBytes).map(b => b.toString(16)));
+        console.log("Backend publicKey bytes:", Array.from(publicKeyBytes).map(b => b.toString(16)));
+
+        const valid = pubKey.verify(messageBytes, signatureBytes);
+        console.log(valid, 'valid')
+        return
+        // const isValid = verifyHederaSignature(publicKey, signature, message);
+        // console.log(isValid, 'isValid')
+        // return
+        // if (!isValid) throw httpErrors.unauthorized("Invalid Hedera signature");
 
         // Optional: store EVM address equivalent for tracking
         const evmAddress = this.accountIdToSolidityAddress(accountId);
@@ -163,18 +187,12 @@ export default class AuthService {
             evmAddress,
         });
 
-        const token = jwt.sign(
-            {
-                investorId: (investor as any)._id,
-                accountId,
-                evmAddress,
-                role: "investor",
-            },
-            process.env.JWT_SECRET!,
-            { expiresIn: "7d" }
-        );
+        const token = this.app.jwt.sign({
+            investorId: (investor as any)._id,
+            role: "investor",
+            accountId,
 
-        console.log("✅ Verified Hedera signature successfully");
+        });
         return { token };
     }
 

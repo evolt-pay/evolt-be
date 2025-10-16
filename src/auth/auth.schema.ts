@@ -133,7 +133,7 @@ export const InvestorNonceSchema: FastifySchema = {
 };
 
 
-export const InvestorVerifyWalletSchema: FastifySchema = {
+export const InvestorVerifySignatureSchema: FastifySchema = {
     description: "Verify Hedera wallet signature and issue JWT for authenticated sessions",
     tags: ["auth", "investor"],
     body: {
@@ -149,6 +149,14 @@ export const InvestorVerifyWalletSchema: FastifySchema = {
                 type: "string",
                 description: "Signature of the nonce message from the Hedera wallet",
             },
+            message: {
+                type: "string",
+                description: "Signature of the nonce message from the Hedera wallet",
+            },
+            publicKey: {
+                type: "string",
+                description: "Signature of the nonce message from the Hedera wallet",
+            }
         },
     },
     response: {

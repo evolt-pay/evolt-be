@@ -67,13 +67,13 @@ class AuthController {
 
     // Step 2: Verify signature
     verifySignature = async (req: FastifyRequest, reply: FastifyReply) => {
-        const { accountId, message, signature } = req.body as any;
+        const { publicKey, accountId, message, signature } = req.body as any;
         if (!accountId || !signature)
             return reply
                 .code(400)
                 .send(UtilService.customResponse(false, "Missing accountId or signature"));
 
-        const { token } = await this.authService.verifySignature(accountId, message, signature);
+        const { token } = await this.authService.verifySignature(publicKey, accountId, message, signature);
         reply.send(UtilService.customResponse(true, "Wallet verified", { token }));
     };
 

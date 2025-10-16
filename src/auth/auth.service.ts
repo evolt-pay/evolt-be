@@ -8,10 +8,9 @@ import { PublicKey } from "@hashgraph/sdk";
 import UserService from "../user/user.service.js";
 import UtilService from "../util/util.service.js";
 import { ISendOtp, ISignup, IVerifyOtp, ISetPassword, ILogin } from "./auth.dto.js";
-import { verifyHederaSignature } from "@util/util.hedera.js";
+import { verifyMessageSignature } from "../util/util.hedera.js";
 
 export default class AuthService {
-    private challengeStore = new Map<string, string>();
 
     constructor(private app: FastifyInstance) { }
 
@@ -150,33 +149,19 @@ export default class AuthService {
 
         const key = `nonce:${accountId}`;
 
-        // const stored = await this.getAndDeleteNonce(key);
-        // if (!stored || stored !== message) {
-        //     throw httpErrors.badRequest("Challenge expired or does not match");
-        // }
-        // console.log(publicKey, publicKey)
-        // console.log(stored, "stored, message")
-        // console.log(message, 'message')
-        // console.log(signature, 'signature')
+        const stored = await this.getAndDeleteNonce(key);
+        if (!stored || stored !== message) {
+            throw httpErrors.badRequest("Challenge expired or does not match");
+        }
 
-        const publicKeyBytes = Buffer.from(publicKey, "base64");
-        const signatureBytes = Buffer.from(signature, "base64");
-        // 2️⃣ Convert to Hedera PublicKey instance
-        const pubKey = PublicKey.fromBytes(publicKeyBytes);
-        const prefix = "\x19Hedera Signed Message:\n";
-        const messageBytes = Buffer.from(message, "utf8");
 
-        console.log("Backend message bytes:", Array.from(messageBytes).map(b => b.toString(16)));
-        console.log("Backend signature bytes:", Array.from(signatureBytes).map(b => b.toString(16)));
-        console.log("Backend publicKey bytes:", Array.from(publicKeyBytes).map(b => b.toString(16)));
+        const publicKeyBytes = Buffer.from(publicKey, "hex");
 
-        const valid = pubKey.verify(messageBytes, signatureBytes);
-        console.log(valid, 'valid')
-        return
-        // const isValid = verifyHederaSignature(publicKey, signature, message);
-        // console.log(isValid, 'isValid')
-        // return
-        // if (!isValid) throw httpErrors.unauthorized("Invalid Hedera signature");
+        const pubKey = PublicKey.fromBytesED25519(publicKeyBytes);
+
+        const isValid = verifyMessageSignature(message, signature, pubKey);
+
+        if (!isValid) throw httpErrors.unauthorized("Invalid Hedera signature");
 
         // Optional: store EVM address equivalent for tracking
         const evmAddress = this.accountIdToSolidityAddress(accountId);

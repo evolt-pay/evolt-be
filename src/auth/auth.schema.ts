@@ -138,7 +138,7 @@ export const InvestorVerifySignatureSchema: FastifySchema = {
     tags: ["auth", "investor"],
     body: {
         type: "object",
-        required: ["accountId", "signature", "message"],
+        required: ["publicKey", "accountId", "signature", "message"],
         properties: {
             accountId: {
                 type: "string",

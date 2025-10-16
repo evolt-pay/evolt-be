@@ -114,12 +114,8 @@ export default class AuthService {
         const nonce = crypto.randomBytes(32).toString("hex");
         const key = `nonce:${accountId}`;
 
-        // ioredis supports 'EX' seconds. We can also add 'NX' if you want to avoid overwriting.
-        // If you prefer idempotency, omit 'NX' and just overwrite.
-        // With NX: returns 'OK' on success or null if key already exists.
         const setRes = await this.app.redis.set(key, nonce, "EX", 300);
         if (setRes !== "OK") {
-            // Extremely rare; handle defensively.
             await this.app.redis.del(key);
             await this.app.redis.set(key, nonce, "EX", 300);
         }
@@ -166,7 +162,6 @@ export default class AuthService {
         // Optional: store EVM address equivalent for tracking
         const evmAddress = this.accountIdToSolidityAddress(accountId);
 
-        // Issue JWT token
         const investor = await investorService.connectWallet(accountId, {
             network: "hedera",
             evmAddress,

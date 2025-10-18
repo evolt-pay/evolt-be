@@ -1,4 +1,4 @@
-import { accountIdPattern } from "constant/common";
+import { accountIdPattern } from "../constant/common.js";
 import { FastifySchema } from "fastify";
 
 export const SendOtpSchema: FastifySchema = {

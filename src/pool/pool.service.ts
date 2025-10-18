@@ -4,7 +4,7 @@ import InvestmentModel from "../investment/investment.model.js";
 import { BusinessModel } from "../business/business.model.js";
 import { CorporateModel } from "../corporate/corporate.model.js";
 import invoiceService from "../invoice/invoice.service.js";
-import { countTokenHolders } from "@util/util.hedera.js";
+import { countTokenHolders } from "../util/util.hedera.js";
 
 interface PoolListOptions {
     status?: "funding" | "funded" | "fully_funded" | "all";

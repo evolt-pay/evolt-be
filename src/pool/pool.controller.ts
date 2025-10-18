@@ -3,7 +3,6 @@ import PoolService from "./pool.service.js";
 import UtilService from "../util/util.service.js";
 
 class PoolController {
-    /** GET /pools */
     async list(req: FastifyRequest, reply: FastifyReply) {
         try {
             const { page, limit, status, search } = (req.query || {}) as any;
@@ -22,7 +21,6 @@ class PoolController {
         }
     }
 
-    /** GET /pools/:invoiceId */
     async details(req: FastifyRequest, reply: FastifyReply) {
         try {
             const { invoiceId } = req.params as any;

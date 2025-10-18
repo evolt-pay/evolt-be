@@ -24,26 +24,25 @@ class BusinessService {
             kybStatus: "pending",
         };
 
-        let profile = await BusinessModel.findOne({ userId });
+        let business = await BusinessModel.findOne({ userId });
 
-        if (profile) {
-            Object.assign(profile, payload);
-            await profile.save();
+        if (business) {
+            Object.assign(business, payload);
+            await business.save();
         } else {
-            profile = new BusinessModel({ ...payload, userId });
-            await profile.save();
+            business = new BusinessModel({ ...payload, userId });
+            await business.save();
         }
 
-        // Update onboarding step in User table
         await UserModel.findByIdAndUpdate(userId, {
             onboardingStep: "personal_saved",
             kycStatus: "pending",
         });
 
-        return profile;
+        return business;
     }
 
-    async getBusinessProfile(userId: string): Promise<IBusiness | null> {
+    async getBusiness(userId: string): Promise<IBusiness | null> {
         return BusinessModel.findOne({ userId });
     }
 

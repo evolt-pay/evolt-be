@@ -7,13 +7,13 @@ export default async function poolRoutes(app: FastifyInstance) {
     const routes: RouteOptions[] = [
         {
             method: RouteMethods.GET,
-            url: "/pools",
+            url: "/",
             handler: (req, reply) => PoolController.list(req, reply),
             schema: GetAllPoolsSchema,
         },
         {
             method: RouteMethods.GET,
-            url: "/pools/:invoiceId",
+            url: "/:invoiceId",
             handler: (req, reply) => PoolController.details(req, reply),
             schema: GetPoolDetailsSchema,
         },

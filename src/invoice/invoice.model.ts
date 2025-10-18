@@ -17,7 +17,7 @@ export interface InvoiceDoc extends Document {
     verifiedAt?: Date;
     hcsTxId?: string;
     tokenized?: boolean;
-    apy?: number;
+    yieldRate?: number;
     durationDays?: number;
     minInvestment?: number;
     maxInvestment?: number;
@@ -29,11 +29,9 @@ export interface InvoiceDoc extends Document {
 
 const InvoiceSchema = new Schema<InvoiceDoc>(
     {
-        // ✅ References
-        businessId: { type: Schema.Types.ObjectId, ref: "BusinessProfile", required: true },
+        businessId: { type: Schema.Types.ObjectId, ref: "Business", required: true },
         corporateId: { type: Schema.Types.ObjectId, ref: "Corporate", required: true },
 
-        // ✅ Invoice metadata
         invoiceNumber: { type: String, required: true, unique: true },
         amount: { type: Number, required: true },
         currency: { type: String, default: "USD" },
@@ -45,7 +43,6 @@ const InvoiceSchema = new Schema<InvoiceDoc>(
         verifier: { type: String },
         blobUrl: { type: String },
 
-        // ✅ Tokenization fields
         tokenId: { type: String },
         tokenEvm: { type: String },
         escrowEvm: { type: String },
@@ -55,10 +52,9 @@ const InvoiceSchema = new Schema<InvoiceDoc>(
         verifiedAt: { type: Date },
         hcsTxId: { type: String },
 
-        // ✅ Financial/Investment metrics
-        apy: { type: Number, default: 0.1 },
+        yieldRate: { type: Number, default: 0.1 },
         durationDays: { type: Number, default: 90 },
-        minInvestment: { type: Number, default: 100 },
+        minInvestment: { type: Number, default: 10 },
         maxInvestment: { type: Number, default: 10000 },
         totalTarget: { type: Number, default: 100000 },
         expiryDate: { type: Date, default: () => new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) },

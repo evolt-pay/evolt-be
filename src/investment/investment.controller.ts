@@ -6,7 +6,7 @@ class InvestmentController {
         try {
             const { ...data } = req.body as any;
             const { user } = req as any;
-            const result = await InvestmentService.invest(user.id, data);
+            const result = await InvestmentService.investFromDeposit({ accountId: user.accountId, investorId: user.id }, data);
             return reply.code(201).send({
                 message: "Investment successful",
                 data: result.investment,

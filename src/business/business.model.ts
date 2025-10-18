@@ -39,4 +39,4 @@ const BusinessSchema = new Schema<IBusiness>(
     { timestamps: true }
 );
 
-export const BusinessModel = mongoose.model<IBusiness>("BusinessProfile", BusinessSchema);
+export const BusinessModel = mongoose.model<IBusiness>("Business", BusinessSchema);

@@ -72,20 +72,20 @@ class BusinessController {
         }
     }
 
-    async getBusinessProfile(req: FastifyRequest, reply: FastifyReply) {
+    async getBusiness(req: FastifyRequest, reply: FastifyReply) {
         try {
             const { user } = req as any;
-            const profile = await BusinessService.getBusinessProfile(user?._id);
+            const business = await BusinessService.getBusiness(user?._id);
 
-            if (!profile) {
+            if (!business) {
                 return reply
                     .status(404)
-                    .send(UtilService.customResponse(false, "Business profile not found"));
+                    .send(UtilService.customResponse(false, "Business not found"));
             }
 
             reply
                 .status(200)
-                .send(UtilService.customResponse(true, "Business profile fetched", profile));
+                .send(UtilService.customResponse(true, "Business fetched", business));
         } catch (error: any) {
             reply
                 .status(500)

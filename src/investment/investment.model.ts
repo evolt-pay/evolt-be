@@ -1,17 +1,16 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface InvestmentDoc extends Document {
-    investorId: string;            // Hedera Account ID (e.g., 0.0.12345)
-    investorEmail: string;         // Investor email for notifications
-    tokenId: string;               // iToken (Invoice token)
-    invoiceNumber: string;         // Invoice reference
-    vusdAmount: number;            // Amount invested in vUSD
-    iTokenAmount: number;          // iTokens received
-    yieldRate: number;             // e.g. 0.1 for 10%
-    expectedYield: number;         // Calculated yield (vUSD)
+    investorId: string;
+    tokenId: string;
+    invoiceNumber: string;
+    vusdAmount: number;
+    iTokenAmount: number;
+    yieldRate: number;
+    expectedYield: number;
     contractIndex?: number;
     status: "active" | "completed";
-    txId?: string;                 // Hedera tx for iToken delivery
+    txId?: string;
     maturedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
@@ -20,7 +19,6 @@ export interface InvestmentDoc extends Document {
 const investmentSchema = new Schema<InvestmentDoc>(
     {
         investorId: { type: String, required: true },
-        investorEmail: { type: String },
         tokenId: { type: String, required: true },
         invoiceNumber: { type: String, required: true },
         vusdAmount: { type: Number, required: true },

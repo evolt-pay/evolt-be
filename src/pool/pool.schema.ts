@@ -37,7 +37,9 @@ export const GetAllPoolsSchema: FastifySchema = {
                                     _id: { type: "string" },
                                     projectName: { type: "string" },
                                     businessName: { type: "string" },
-                                    apy: { type: "number" },
+                                    corporateName: { type: "string" },
+                                    corporateLogo: { type: "string" },
+                                    yieldRate: { type: "number" },
                                     minInvestment: { type: "number" },
                                     maxInvestment: { type: "number" },
                                     totalTarget: { type: "number" },
@@ -56,6 +58,7 @@ export const GetAllPoolsSchema: FastifySchema = {
         },
     },
 };
+
 
 export const GetPoolDetailsSchema: FastifySchema = {
     description: "Fetch detailed information about a single investment pool",
@@ -77,19 +80,35 @@ export const GetPoolDetailsSchema: FastifySchema = {
                 data: {
                     type: "object",
                     properties: {
+                        tokenId: { type: "string", nullable: true },
+                        escrowContractId: { type: "string", nullable: true },
+                        _id: { type: "string" },
+                        // business / corporate presentation
                         invoiceNumber: { type: "string" },
                         businessName: { type: "string" },
                         businessDescription: { type: "string" },
                         corporateName: { type: "string" },
+                        corporateLogo: { type: "string", nullable: true },
                         corporateDescription: { type: "string" },
+
+                        // funding stats (off-chain + on-chain)
                         fundedAmount: { type: "number" },
                         totalInvestors: { type: "number" },
-                        apy: { type: "number" },
+                        stakerCountOnChain: { type: "number" },
+
+                        // economics / limits
+                        yieldRate: { type: "number" },
                         durationInDays: { type: "number" },
-                        verifier: { type: "string" },
-                        verifiedAt: { type: "string" },
-                        hcsTxId: { type: "string" },
-                        blobUrl: { type: "string" },
+                        minInvestment: { type: "number" },
+                        maxInvestment: { type: "number" },
+                        totalTarget: { type: "number" },
+                        expiryDate: { type: "string", format: "date-time", nullable: true },
+
+                        // audit
+                        verifier: { type: "string", nullable: true },
+                        verifiedAt: { type: "string", format: "date-time", nullable: true },
+                        hcsTxId: { type: "string", nullable: true },
+                        blobUrl: { type: "string", nullable: true },
                     },
                 },
             },

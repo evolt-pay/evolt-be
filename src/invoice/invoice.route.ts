@@ -1,6 +1,6 @@
 import { FastifyInstance, RouteOptions } from "fastify";
 import InvoiceController from "./invoice.controller.js";
-import { authenticate } from "../middleware/index.js";
+import { authenticateUser } from "../middleware/index.js";
 import {
     CreateInvoiceSchema,
     VerifyInvoiceSchema,
@@ -14,7 +14,7 @@ export default async function invoiceRoutes(app: FastifyInstance) {
         {
             method: RouteMethods.POST,
             url: "/",
-            preHandler: [authenticate],
+            preHandler: [authenticateUser],
             handler: (req, reply) => InvoiceController.createInvoice(req, reply),
             schema: CreateInvoiceSchema,
         },
@@ -27,7 +27,7 @@ export default async function invoiceRoutes(app: FastifyInstance) {
         {
             method: RouteMethods.GET,
             url: "/:id",
-            preHandler: [authenticate],
+            preHandler: [authenticateUser],
             handler: (req, reply) => InvoiceController.getInvoice(req, reply),
             schema: GetInvoiceSchema,
         },

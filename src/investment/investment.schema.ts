@@ -7,16 +7,10 @@ export const CreateInvestmentSchema: FastifySchema = {
     summary: "Investor purchases invoice token (iToken)",
     body: {
         type: "object",
-        required: ["investorId", "tokenId", "invoiceNumber", "vusdAmount", "iTokenAmount"],
+        required: ["invoiceId", "txId"],
         properties: {
-            investorId: { type: "string", description: "Investor Hedera account ID" },
-            investorEmail: { type: "string", format: "email" },
-            tokenId: { type: "string", description: "Invoice token (iToken) ID" },
-            invoiceNumber: { type: "string", description: "Invoice reference number" },
-            vusdAmount: { type: "number", description: "Investment amount in vUSD" },
-            iTokenAmount: { type: "number", description: "Number of iTokens purchased" },
-            yieldRate: { type: "number", description: "Expected yield rate (default 0.1)" },
-            durationInDays: { type: "number", description: "Investment duration in days (default 30)" },
+            invoiceId: { type: "string", description: "Mongo _id of the invoice/pool" },
+            txId: { type: "string", description: "Hedera transaction ID of the vUSD transfer" },
         },
     },
     response: {
@@ -63,7 +57,6 @@ export const GetAllInvestmentsSchema: FastifySchema = {
                         properties: {
                             _id: { type: "string" },
                             investorId: { type: "string" },
-                            investorEmail: { type: "string" },
                             tokenId: { type: "string" },
                             invoiceNumber: { type: "string" },
                             vusdAmount: { type: "number" },

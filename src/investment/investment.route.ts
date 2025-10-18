@@ -7,7 +7,7 @@ import {
     GetInvestmentsByInvestorSchema,
     SettleInvestmentsSchema,
 } from "./investment.schema.js";
-import { authenticate } from "../middleware/index.js";
+import { authenticateInvestor } from "../middleware/index.js";
 
 export default async function investmentRoutes(app: FastifyInstance) {
     const routes: RouteOptions[] = [
@@ -15,28 +15,28 @@ export default async function investmentRoutes(app: FastifyInstance) {
             method: RouteMethods.POST,
             url: "/",
             handler: (req, reply) => InvestmentController.invest(req, reply),
-            preHandler: [authenticate],
+            preHandler: [authenticateInvestor],
             schema: CreateInvestmentSchema,
         },
         {
             method: RouteMethods.GET,
             url: "/",
             handler: (req, reply) => InvestmentController.getAll(req, reply),
-            preHandler: [authenticate],
+            preHandler: [authenticateInvestor],
             schema: GetAllInvestmentsSchema,
         },
         {
             method: RouteMethods.GET,
             url: "/investor/:investorId",
             handler: (req, reply) => InvestmentController.getByInvestor(req, reply),
-            preHandler: [authenticate],
+            preHandler: [authenticateInvestor],
             schema: GetInvestmentsByInvestorSchema,
         },
         {
             method: RouteMethods.POST,
             url: "/settle",
             handler: (req, reply) => InvestmentController.settle(req, reply),
-            preHandler: [authenticate],
+            preHandler: [authenticateInvestor],
             schema: SettleInvestmentsSchema,
         }
     ];

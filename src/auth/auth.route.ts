@@ -7,10 +7,12 @@ import {
     SetPasswordSchema,
     LoginSchema,
     InvestorNonceSchema,
-    InvestorVerifySignatureSchema
+    InvestorVerifySignatureSchema,
+    RefreshTokenSchema,
+    LogoutSchema
 } from "./auth.schema.js";
 import { RouteMethods } from "../util/util.dto.js";
-import { authenticate } from "../middleware/index.js";
+import { authenticateUser } from "../middleware/index.js";
 import { validatePasswordsMatch } from "./auth.middleware.js";
 
 export default function authRoutes(app: FastifyInstance) {
@@ -26,7 +28,7 @@ export default function authRoutes(app: FastifyInstance) {
             handler: controller.signup,
         },
         { method: RouteMethods.POST, url: "/verify-otp", handler: controller.verifyOtp, schema: VerifyOtpSchema },
-        { method: RouteMethods.POST, url: "/set-password", handler: controller.setPassword, preHandler: [authenticate], schema: SetPasswordSchema },
+        { method: RouteMethods.POST, url: "/set-password", handler: controller.setPassword, preHandler: [authenticateUser], schema: SetPasswordSchema },
         { method: RouteMethods.POST, url: "/login", handler: controller.login, schema: LoginSchema },
         {
             method: "GET",
@@ -40,6 +42,8 @@ export default function authRoutes(app: FastifyInstance) {
             schema: InvestorVerifySignatureSchema,
             handler: controller.verifySignature,
         },
+        // { method: RouteMethods.POST, url: "/auth/refresh", handler: ctrl.refresh, schema: RefreshTokenSchema },
+        // { method: RouteMethods.POST, url: "/auth/logout", handler: ctrl.logout, schema: LogoutSchema },
     ];
 
     routes.forEach((route) => app.route(route));

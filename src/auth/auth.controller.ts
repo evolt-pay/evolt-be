@@ -53,9 +53,7 @@ class AuthController {
         reply.status(200).send(UtilService.customResponse(true, "Login successful", { token, role }));
     };
 
-    /* ---- Hedera Wallet Auth Flow ---- */
 
-    // Step 1: Generate nonce
     getChallenge = async (req: FastifyRequest, reply: FastifyReply) => {
         const { accountId } = req.query as any;
         if (!accountId)
@@ -65,7 +63,6 @@ class AuthController {
         reply.send(UtilService.customResponse(true, "Challenge generated", { nonce }));
     };
 
-    // Step 2: Verify signature
     verifySignature = async (req: FastifyRequest, reply: FastifyReply) => {
         const { publicKey, accountId, message, signature } = req.body as any;
         if (!accountId || !signature)
@@ -76,6 +73,9 @@ class AuthController {
         const { token } = await this.authService.verifySignature(publicKey, accountId, message, signature);
         reply.send(UtilService.customResponse(true, "Wallet verified", { token }));
     };
+
+
+
 
 
 }

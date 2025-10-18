@@ -1,6 +1,6 @@
 import { FastifyInstance, RouteOptions } from "fastify";
 import UserController from "./user.controller.js";
-import { authenticate } from "../middleware/index.js";
+import { authenticateUser } from "../middleware/index.js";
 import {
     GetProfileSchema,
     UpdateProfileSchema,
@@ -11,8 +11,8 @@ export default function userRoutes(app: FastifyInstance) {
     const controller = new UserController(app);
 
     const routes: RouteOptions[] = [
-        { method: RouteMethods.GET, url: "/profile", handler: controller.getProfile, preHandler: [authenticate], schema: GetProfileSchema },
-        { method: RouteMethods.PUT, url: "/profile", handler: controller.updateProfile, preHandler: [authenticate], schema: UpdateProfileSchema },
+        { method: RouteMethods.GET, url: "/profile", handler: controller.getProfile, preHandler: [authenticateUser], schema: GetProfileSchema },
+        { method: RouteMethods.PUT, url: "/profile", handler: controller.updateProfile, preHandler: [authenticateUser], schema: UpdateProfileSchema },
     ];
 
     routes.forEach((route) => app.route(route));

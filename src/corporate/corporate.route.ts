@@ -1,8 +1,8 @@
 import { FastifyInstance, RouteOptions } from "fastify";
 import CorporateController from "./corporate.controller.js";
-import { CreateCorporateSchema, GetAllCorporatesSchema } from "./corporate.schema.js";
+import { CreateCorporateSchema, GetCorporateByIdSchema, UpdateCorporateSchema, DeleteCorporateSchema } from "./corporate.schema.js";
 import { RouteMethods } from "../util/util.dto.js";
-import { authenticate } from "../auth/auth.middleware.js";
+import { authenticateUser } from "../middleware/index.js";
 
 export default async function corporateRoutes(app: FastifyInstance) {
     const routes: RouteOptions[] = [
@@ -15,28 +15,24 @@ export default async function corporateRoutes(app: FastifyInstance) {
         },
         {
             method: RouteMethods.GET,
-            url: "/",
-            handler: (req, reply) => CorporateController.list(req, reply),
-            schema: GetAllCorporatesSchema,
-            preHandler: [authenticate],
-        },
-        {
-            method: RouteMethods.GET,
             url: "/:id",
             handler: (req, reply) => CorporateController.get(req, reply),
-            preHandler: [authenticate],
+            schema: GetCorporateByIdSchema,
+            preHandler: [authenticateUser],
         },
         {
             method: RouteMethods.PUT,
             url: "/:id",
             handler: (req, reply) => CorporateController.update(req, reply),
-            preHandler: [authenticate],
+            schema: UpdateCorporateSchema,
+            preHandler: [authenticateUser],
         },
         {
             method: RouteMethods.DELETE,
             url: "/:id",
             handler: (req, reply) => CorporateController.delete(req, reply),
-            preHandler: [authenticate],
+            schema: DeleteCorporateSchema,
+            preHandler: [authenticateUser],
         },
     ];
 

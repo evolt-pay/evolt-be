@@ -1,23 +1,3 @@
-/*
- *
- * Hedera Wallet Connect
- *
- * Copyright (C) 2023 Hedera Hashgraph, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- */
-
 import { Buffer } from 'buffer'
 import {
     AccountId,
@@ -476,4 +456,66 @@ export const accountAndLedgerFromSession = (
             account: AccountId.fromString(acc),
         }
     })
+}
+
+
+const MIRROR_BASE = process.env.HEDERA_MIRROR_NODE_URL
+
+type CountOpts = {
+    excludeAccounts?: string[];
+    timeoutMs?: number;
+};
+
+/**
+ * Count token holders with positive balance (paginated).
+ * Accepts either 0.0.x tokenId or EVM 0x... token address.
+ */
+export async function countTokenHolders(
+    tokenIdOrEvm: string,
+    opts: CountOpts = {}
+): Promise<number> {
+    const { excludeAccounts = [], timeoutMs = 7000 } = opts;
+
+    let url = `${MIRROR_BASE}/v1/tokens/${tokenIdOrEvm}/balances`;
+    let count = 0;
+    const controller = new AbortController();
+    const to = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        while (url) {
+            const res = await fetch(url, { signal: controller.signal });
+            if (!res.ok) {
+                if (res.status === 404) return 0;
+                throw new Error(`Mirror error ${res.status}`);
+            }
+
+            const json = await res.json();
+            const balances: Array<{ account?: string; account_id?: string; balance: number }> =
+                json?.balances ?? [];
+
+            for (const b of balances) {
+                const acct = (b.account_id || b.account || "").toString();
+                if (b.balance > 0 && (!acct || !excludeAccounts.includes(acct))) {
+                    count++;
+                }
+            }
+
+            const next = json?.links?.next as string | undefined;
+            url = next ? `${MIRROR_BASE}${next}` : "";
+        }
+
+        return count;
+    } catch (_err) {
+        // Fail soft: on errors / timeouts, return 0 so the endpoint still responds.
+        return 0;
+    } finally {
+        clearTimeout(to);
+    }
+}
+
+export const normalizeTxId = (id: string) => {
+    const m = id.match(/^(\d+\.\d+\.\d+)@(\d+)\.(\d{1,9})$/);
+    if (!m) return id;
+    const [, acct, s, n] = m;
+    return `${acct}-${s}-${n.padStart(9, "0")}`;
 }

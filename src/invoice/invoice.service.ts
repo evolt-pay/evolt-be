@@ -9,7 +9,6 @@ import {
     TokenId,
     TransferTransaction,
     AccountId,
-    AccountInfoQuery,
     ContractId,
 } from "@hashgraph/sdk";
 import { ethers } from "ethers";
@@ -23,16 +22,15 @@ import InvoiceModel from "./invoice.model.js";
 import UtilService from "../util/util.service.js";
 import businessService from "../business/business.service.js";
 import corporateService from "../corporate/corporate.service.js";
+import { InvoiceDto } from "./invoice.dto.js";
 
 dotenv.config();
 
-/* ====== Paths & ABI ====== */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const abiPath = path.resolve(__dirname, "../abi/VoltEscrow.json");
 const VoltEscrowArtifact = JSON.parse(fs.readFileSync(abiPath, "utf-8"));
 
-/* ====== ENV CONFIG ====== */
 const TREASURY_ID = process.env.HEDERA_OPERATOR_ID!;
 const TREASURY_KEY = process.env.HEDERA_OPERATOR_KEY!;
 const RPC_URL = process.env.HEDERA_RPC_URL!;
@@ -41,13 +39,11 @@ const EVM_OWNER_PK = process.env.HEDERA_EVM_OPERATOR_PRIVATE_KEY!;
 const HCS_TOPIC_ID = process.env.HCS_TOPIC_ID!;
 const ITOKEN_ESCROW_FUND = parseInt(process.env.ITOKEN_ESCROW_FUND || "0", 10);
 
-/* ====== Clients ====== */
 const hederaClient = Client.forTestnet().setOperator(TREASURY_ID, TREASURY_KEY);
 const provider = new ethers.JsonRpcProvider(RPC_URL, { name: "hedera-testnet", chainId: 296 });
 const signer = new ethers.Wallet(EVM_OWNER_PK, provider);
 const escrow = new ethers.Contract(ESCROW_EVM, (VoltEscrowArtifact as any).abi, signer);
 
-/* ====== Helpers ====== */
 function idToEvmAddress(id: string): string {
     if (id.startsWith("0x")) return ethers.getAddress(id);
     const [shardStr, realmStr, numStr] = id.split(".");
@@ -77,36 +73,30 @@ function compactTokenMeta(inv: any): string {
     return s;
 }
 
-/* ====== MAIN SERVICE ====== */
 class InvoiceService {
-    /** Create invoice, link business & corporate, and send verification email */
     async createInvoice(userId: string, data: any, file: any) {
-        // 1️⃣ Validate the vendor’s business
-        const business = await businessService.getBusinessProfile(userId);
+
+        const business = await businessService.getBusiness(userId);
         if (!business) throw new Error("Business profile not found. Please complete KYB first.");
 
-        // 2️⃣ Validate corporate reference
         if (!data.corporateId) throw new Error("Corporate ID is required.");
         const corporate = await corporateService.getCorporateById(data.corporateId);
         if (!corporate) throw new Error("Corporate not found in directory.");
 
-        // 3️⃣ Upload invoice file
         const blobUrl = await AzureUtil.uploadFileFromBuffer(file.buffer, `invoices/${uuidv4()}.pdf`);
 
-        // 4️⃣ Create normalized invoice record
         const invoice = await InvoiceModel.create({
             ...data,
             businessId: business._id,
             corporateId: corporate._id,
             blobUrl,
             status: "pending",
-            apy: data.apy || 0.1,
+            yieldRate: data.yieldRate || 0.1,
             durationDays: data.durationDays || 90,
             totalTarget: data.totalTarget || data.amount,
             expiryDate: data.expiryDate || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
         });
 
-        // 5️⃣ Send verification email
         const contactName = corporate.contactPerson ? ` ${corporate.contactPerson}` : "";
         await UtilService.sendEmail(
             corporate.email,
@@ -120,7 +110,6 @@ class InvoiceService {
         return invoice;
     }
 
-    /** Corporate verifies invoice, trigger Hedera tokenization */
     async verifyInvoice(id: string, verifier: string) {
         const invoice = await InvoiceModel.findById(id);
         if (!invoice) throw new Error("Invalid or expired verification link");
@@ -228,20 +217,27 @@ class InvoiceService {
         return { tokenId, tokenEvm, initialSupply: totalTokens, escrowContractId: ESCROW_CONTRACT_ID };
     }
 
-    /** Fetch invoice by ID */
-    async getInvoiceById(id: string) {
-        return await InvoiceModel.findById(id)
-            .populate("businessId", "firstName lastName email")
-            .populate("corporateId", "name email contactPerson")
+    async getInvoiceById(id: string): Promise<InvoiceDto | null> {
+        const inv = await InvoiceModel.findById(id)
+            .populate({ path: "businessId", select: "businessName description logoUrl", model: "Business" })
+            .populate({ path: "corporateId", select: "name description logoUrl", model: "Corporate" })
             .lean();
+        if (!inv) return null;
+
+        const { businessId, corporateId, ...rest } = inv as any;
+
+        return {
+            ...rest,
+            _id: String(inv._id),
+            business: businessId ?? null,
+            corporate: corporateId ?? null,
+        };
     }
 
-    /** Fetch all invoices for a business */
     async getInvoicesByBusiness(businessId: string) {
         return await InvoiceModel.find({ businessId }).sort({ createdAt: -1 }).lean();
     }
 
-    /** Fetch verified invoices */
     async getVerifiedInvoices() {
         const invoices = await InvoiceModel.find({ status: "verified" }).sort({ createdAt: -1 }).lean();
         return invoices.map((inv: any) => ({

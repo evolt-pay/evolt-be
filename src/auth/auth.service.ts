@@ -14,7 +14,6 @@ export default class AuthService {
 
     constructor(private app: FastifyInstance) { }
 
-    /* ---------------- EMAIL AUTH FLOW (as before) ---------------- */
     async sendOtp({ email }: ISendOtp): Promise<void> {
         const user = await UserService.fetchOneUser({ email });
         if (user && user.isVerified) throw httpErrors.badRequest("Email already registered");
@@ -105,9 +104,7 @@ export default class AuthService {
         return { token, role: user.role };
     }
 
-    /* ---------------- HEDERA WALLET AUTH ---------------- */
 
-    /** Step 1 — Create a random challenge (nonce) */
     async generateChallenge(accountId: string): Promise<{ nonce: string; }> {
         if (!accountId) throw httpErrors.badRequest("Missing accountId");
 
@@ -135,7 +132,6 @@ export default class AuthService {
     }
 
 
-    /** Step 2 — Verify Hedera wallet signature */
     async verifySignature(
         publicKey: string,
         accountId: string,
@@ -159,38 +155,19 @@ export default class AuthService {
 
         if (!isValid) throw httpErrors.unauthorized("Invalid Hedera signature");
 
-        // Optional: store EVM address equivalent for tracking
-        const evmAddress = this.accountIdToSolidityAddress(accountId);
 
-        const investor = await investorService.connectWallet(accountId, {
-            network: "hedera",
-            evmAddress,
-        });
+        const investor = await investorService.addInvestor(accountId);
 
         const token = this.app.jwt.sign({
             investorId: (investor as any)._id,
             role: "investor",
             accountId,
 
-        });
+        }, { expiresIn: '30d' });
         return { token };
     }
 
 
-    /** Step 3 — Convert Hedera Account ID → Solidity Address */
-    private accountIdToSolidityAddress(accountId: string): string {
-        const parts = accountId.split(".");
-        if (parts.length !== 3) throw httpErrors.badRequest("Invalid Hedera Account ID");
 
-        const shard = BigInt(parts[0]);
-        const realm = BigInt(parts[1]);
-        const num = BigInt(parts[2]);
 
-        return (
-            "0x" +
-            shard.toString(16).padStart(8, "0") +
-            realm.toString(16).padStart(16, "0") +
-            num.toString(16).padStart(16, "0")
-        ).toLowerCase();
-    }
 }

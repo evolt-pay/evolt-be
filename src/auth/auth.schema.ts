@@ -1,8 +1,5 @@
+import { accountIdPattern } from "constant/common";
 import { FastifySchema } from "fastify";
-
-/* -------------------------------------------------------------------------- */
-/*                            EMAIL-BASED AUTH FLOW                           */
-/* -------------------------------------------------------------------------- */
 
 export const SendOtpSchema: FastifySchema = {
     description: "Send OTP to user email",
@@ -91,16 +88,11 @@ export const LoginSchema: FastifySchema = {
     },
 };
 
-/* -------------------------------------------------------------------------- */
-/*                           HEDERA WALLET-BASED AUTH                         */
-/* -------------------------------------------------------------------------- */
-
-const accountIdPattern = "^0\\.[0-9]+\\.[0-9]+$"; // Strict Hedera format (e.g., 0.0.12345)
 
 
 export const InvestorNonceSchema: FastifySchema = {
     description: "Generate a unique nonce for investor Hedera account verification",
-    tags: ["auth", "investor"],
+    tags: ["auth"],
     querystring: {
         type: "object",
         required: ["accountId"],
@@ -135,7 +127,7 @@ export const InvestorNonceSchema: FastifySchema = {
 
 export const InvestorVerifySignatureSchema: FastifySchema = {
     description: "Verify Hedera wallet signature and issue JWT for authenticated sessions",
-    tags: ["auth", "investor"],
+    tags: ["auth"],
     body: {
         type: "object",
         required: ["publicKey", "accountId", "signature", "message"],
@@ -183,7 +175,7 @@ export const InvestorVerifySignatureSchema: FastifySchema = {
 
 export const ValidateTokenSchema: FastifySchema = {
     description: "Validate JWT token to confirm session validity",
-    tags: ["auth", "investor"],
+    tags: ["auth"],
     headers: {
         type: "object",
         properties: {
@@ -209,6 +201,56 @@ export const ValidateTokenSchema: FastifySchema = {
                         expiresAt: { type: "string" },
                     },
                 },
+            },
+        },
+    },
+};
+
+
+export const RefreshTokenSchema: FastifySchema = {
+    description: "Rotate refresh token and issue new access + refresh tokens",
+    tags: ["auth"],
+    body: {
+        type: "object",
+        properties: {
+            refreshToken: { type: "string" },
+        },
+    },
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
+                data: {
+                    type: "object",
+                    properties: {
+                        token: { type: "string" },
+                        refreshToken: { type: "string" },
+                        role: { type: "string" },
+                    },
+                    required: ["token", "refreshToken"],
+                },
+            },
+        },
+    },
+};
+
+export const LogoutSchema: FastifySchema = {
+    description: "Invalidate the current refresh token",
+    tags: ["auth"],
+    body: {
+        type: "object",
+        properties: {
+            refreshToken: { type: "string" },
+        },
+    },
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
             },
         },
     },

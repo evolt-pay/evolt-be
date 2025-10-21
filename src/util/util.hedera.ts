@@ -9,6 +9,8 @@ import {
 } from '@hashgraph/sdk'
 import { ProposalTypes, SessionTypes } from '@walletconnect/types'
 import { proto } from '@hashgraph/proto'
+import { ethers } from "ethers";
+
 
 /**
  * Converts `Transaction` to a Base64-string.
@@ -518,4 +520,34 @@ export const normalizeTxId = (id: string) => {
     if (!m) return id;
     const [, acct, s, n] = m;
     return `${acct}-${s}-${n.padStart(9, "0")}`;
+}
+
+
+export const idToEvmAddress = (id: string) => {
+    if (id.startsWith("0x")) return ethers.getAddress(id);
+    const [shardStr, realmStr, numStr] = id.split(".");
+    const hex =
+        BigInt(shardStr).toString(16).padStart(8, "0") +
+        BigInt(realmStr).toString(16).padStart(16, "0") +
+        BigInt(numStr).toString(16).padStart(16, "0");
+    return ethers.getAddress("0x" + hex);
+}
+
+export const compactTokenMeta = (inv: any): string => {
+    const MAX = 100;
+    const meta: any = { i: String(inv.invoiceNumber), a: Number(inv.amount), u: (inv.blobUrl ?? "").slice(0, 40) };
+    let s = JSON.stringify(meta);
+    while (Buffer.byteLength(s, "utf8") > MAX && meta.u.length > 0) {
+        meta.u = meta.u.slice(0, meta.u.length - 5);
+        s = JSON.stringify(meta);
+    }
+    if (Buffer.byteLength(s, "utf8") > MAX) {
+        delete meta.a;
+        s = JSON.stringify(meta);
+    }
+    if (Buffer.byteLength(s, "utf8") > MAX) {
+        delete meta.u;
+        s = JSON.stringify(meta);
+    }
+    return s;
 }

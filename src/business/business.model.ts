@@ -7,7 +7,7 @@ export interface ISignatory {
     idUrl?: string;
 }
 
-export interface IBusiness extends Document {
+export interface BusinessDoc extends Document {
     userId: mongoose.Types.ObjectId;
     rcNumber: string;
     businessName: string;
@@ -18,7 +18,7 @@ export interface IBusiness extends Document {
     kybStatus: "pending" | "approved" | "rejected";
 }
 
-const BusinessSchema = new Schema<IBusiness>(
+const BusinessSchema = new Schema<BusinessDoc>(
     {
         userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
         rcNumber: String,
@@ -39,4 +39,4 @@ const BusinessSchema = new Schema<IBusiness>(
     { timestamps: true }
 );
 
-export const BusinessModel = mongoose.model<IBusiness>("Business", BusinessSchema);
+export const BusinessModel = mongoose.model<BusinessDoc>("Business", BusinessSchema);

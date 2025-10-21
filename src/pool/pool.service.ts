@@ -1,10 +1,11 @@
 import { PipelineStage } from "mongoose";
-import InvoiceModel from "../invoice/invoice.model.js";
+import AssetModel from "../asset/asset.model.js";
 import InvestmentModel from "../investment/investment.model.js";
-import { BusinessModel } from "../business/business.model.js";
-import { CorporateModel } from "../corporate/corporate.model.js";
-import invoiceService from "../invoice/invoice.service.js";
+import { BusinessDoc, BusinessModel } from "../business/business.model.js";
+import { CorporateDoc, CorporateModel } from "../corporate/corporate.model.js";
+import assetService from "../asset/asset.service.js";
 import { countTokenHolders } from "../util/util.hedera.js";
+import { AssetDoc } from "asset/asset.type.js";
 
 interface PoolListOptions {
     status?: "funding" | "funded" | "fully_funded" | "all";
@@ -30,18 +31,18 @@ class PoolService {
         const base: PipelineStage[] = [
             { $match: match },
 
-            // 1) Join Business
+            // 1️⃣ Join Business
             {
                 $lookup: {
                     from: BusinessModel.collection.name,
-                    localField: "businessId",
+                    localField: "originatorId",
                     foreignField: "_id",
                     as: "biz",
                 },
             },
             { $unwind: { path: "$biz", preserveNullAndEmptyArrays: true } },
 
-            // 2) Join Corporate
+            // 2️⃣ Join Corporate
             {
                 $lookup: {
                     from: CorporateModel.collection.name,
@@ -52,7 +53,7 @@ class PoolService {
             },
             { $unwind: { path: "$corp", preserveNullAndEmptyArrays: true } },
 
-            // 3) Funded amount aggregate
+            // 3️⃣ Funded amount aggregate
             {
                 $lookup: {
                     from: InvestmentModel.collection.name,
@@ -74,12 +75,11 @@ class PoolService {
                 },
             },
 
-            // 4) Derived fields incl. business/corporate + daysLeft
+            // 4️⃣ Derived fields
             {
                 $addFields: {
                     businessName: "$biz.businessName",
                     corporateName: "$corp.name",
-                    // 👇 if your field is `logo` instead of `logoUrl`, swap order
                     corporateLogo: { $ifNull: ["$corp.logoUrl", "$corp.logo"] },
                     fundedAmount: { $ifNull: [{ $arrayElemAt: ["$agg.funded", 0] }, 0] },
                     daysLeft: {
@@ -98,7 +98,7 @@ class PoolService {
                 },
             },
 
-            // 5) fundingProgress
+            // 5️⃣ fundingProgress
             {
                 $addFields: {
                     fundingProgress: {
@@ -121,7 +121,7 @@ class PoolService {
                 },
             },
 
-            // 6) derivedStatus
+            // 6️⃣ derivedStatus
             {
                 $addFields: {
                     derivedStatus: {
@@ -160,6 +160,7 @@ class PoolService {
                     daysLeft: 1,
                     expiryDate: 1,
                     blobUrl: 1,
+                    assetType: 1,
                     createdAt: 1,
                 },
             },
@@ -171,8 +172,8 @@ class PoolService {
         const countPipeline: PipelineStage[] = [...base, { $count: "total" }];
 
         const [items, countAgg] = await Promise.all([
-            InvoiceModel.aggregate(dataPipeline),
-            InvoiceModel.aggregate(countPipeline),
+            AssetModel.aggregate(dataPipeline),
+            AssetModel.aggregate(countPipeline),
         ]);
 
         const total = countAgg[0]?.total ?? 0;
@@ -180,53 +181,54 @@ class PoolService {
         return { page, limit, total, items };
     }
 
-
-    async getPoolDetails(invoiceId: string) {
-        const invoice = await invoiceService.getInvoiceById(invoiceId);
-        if (!invoice) throw new Error("Invoice not found");
+    async getPoolDetails(assetId: string) {
+        const asset = await assetService.getAssetById(assetId) as AssetDoc;
+        if (!asset) throw new Error("Asset not found");
 
         const aggPromise = InvestmentModel.aggregate([
-            { $match: { tokenId: invoice.tokenId } },
+            { $match: { tokenId: asset.tokenId } },
             { $group: { _id: null, totalInvestors: { $sum: 1 }, totalFunded: { $sum: "$vusdAmount" } } },
         ]);
 
         const exclude: string[] = [];
-        if (invoice.escrowContractId) exclude.push(invoice.escrowContractId);
+        if (asset.escrowContractId) exclude.push(asset.escrowContractId);
         if (process.env.HEDERA_OPERATOR_ID) exclude.push(process.env.HEDERA_OPERATOR_ID);
 
-        const stakersPromise = invoice.tokenId
-            ? countTokenHolders(invoice.tokenId, { excludeAccounts: exclude })
+        const stakersPromise = asset.tokenId
+            ? countTokenHolders(asset.tokenId, { excludeAccounts: exclude })
             : Promise.resolve(0);
 
         const [agg, stakerCountOnChain] = await Promise.all([aggPromise, stakersPromise]);
         const poolStats = agg[0] || { totalInvestors: 0, totalFunded: 0 };
-
+        const business = asset.originatorId as BusinessDoc
+        const corporate = asset.corporateId as CorporateDoc
         return {
-            tokenId: invoice.tokenId || null,
-            escrowContractId: invoice.escrowContractId || null,
-            _id: invoice._id,
-            invoiceNumber: invoice.invoiceNumber,
-            businessName: invoice?.business?.businessName || "N/A",
-            businessDescription: invoice.business?.description || "",
-            corporateName: invoice.corporate?.name || "N/A",
-            corporateLogo: (invoice.corporate as any)?.logoUrl ?? (invoice.corporate as any)?.logo ?? null,
-            corporateDescription: invoice.corporate?.description || "",
+            tokenId: asset.tokenId || null,
+            escrowContractId: asset.escrowContractId || null,
+            _id: asset._id,
+            assetType: asset.assetType,
+            projectName: asset.title,
+            businessName: business.businessName || "N/A",
+            businessDescription: business?.description || "",
+            corporateName: corporate?.name || "N/A",
+            corporateLogo: (corporate as any)?.logoUrl ?? (corporate as any)?.logo ?? null,
+            corporateDescription: corporate?.description || "",
 
             fundedAmount: poolStats.totalFunded,
             totalInvestors: poolStats.totalInvestors,
             stakerCountOnChain,
 
-            yieldRate: invoice.yieldRate,
-            durationInDays: invoice.durationDays || 90,
-            minInvestment: invoice.minInvestment ?? 0,
-            maxInvestment: invoice.maxInvestment ?? 0,
-            totalTarget: invoice.totalTarget ?? 0,
-            expiryDate: invoice.expiryDate,
+            yieldRate: asset.yieldRate,
+            durationInDays: asset.durationDays || 90,
+            minInvestment: asset.minInvestment ?? 0,
+            maxInvestment: asset.maxInvestment ?? 0,
+            totalTarget: asset.totalTarget ?? 0,
+            expiryDate: asset.expiryDate,
 
-            verifier: invoice.verifier,
-            verifiedAt: invoice.verifiedAt,
-            hcsTxId: invoice.hcsTxId,
-            blobUrl: invoice.blobUrl,
+            verifier: asset.verifier,
+            verifiedAt: asset.verifiedAt,
+            hcsTxId: asset.hcsTxId,
+            blobUrl: asset.blobUrl,
         };
     }
 }

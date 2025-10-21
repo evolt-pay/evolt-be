@@ -4,12 +4,12 @@ import { FastifySchema } from "fastify";
 export const CreateInvestmentSchema: FastifySchema = {
     description: "Record a new investment and deliver iTokens to investor",
     tags: ["investment"],
-    summary: "Investor purchases invoice token (iToken)",
+    summary: "Investor purchases asset token (iToken)",
     body: {
         type: "object",
-        required: ["invoiceId", "txId"],
+        required: ["assetId", "txId"],
         properties: {
-            invoiceId: { type: "string", description: "Mongo _id of the invoice/pool" },
+            assetId: { type: "string", description: "Mongo _id of the asset/pool" },
             txId: { type: "string", description: "Hedera transaction ID of the vUSD transfer" },
         },
     },
@@ -24,7 +24,7 @@ export const CreateInvestmentSchema: FastifySchema = {
                     properties: {
                         _id: { type: "string" },
                         tokenId: { type: "string" },
-                        invoiceNumber: { type: "string" },
+                        tokenName: { type: "string" },
                         vusdAmount: { type: "number" },
                         iTokenAmount: { type: "number" },
                         yieldRate: { type: "number" },
@@ -58,7 +58,7 @@ export const GetAllInvestmentsSchema: FastifySchema = {
                             _id: { type: "string" },
                             investorId: { type: "string" },
                             tokenId: { type: "string" },
-                            invoiceNumber: { type: "string" },
+                            tokenName: { type: "string" },
                             vusdAmount: { type: "number" },
                             iTokenAmount: { type: "number" },
                             yieldRate: { type: "number" },
@@ -100,7 +100,7 @@ export const GetInvestmentsByInvestorSchema: FastifySchema = {
                         properties: {
                             _id: { type: "string" },
                             tokenId: { type: "string" },
-                            invoiceNumber: { type: "string" },
+                            tokenName: { type: "string" },
                             vusdAmount: { type: "number" },
                             iTokenAmount: { type: "number" },
                             yieldRate: { type: "number" },

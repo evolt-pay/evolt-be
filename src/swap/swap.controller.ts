@@ -3,21 +3,41 @@ import SwapService from "./swap.service.js";
 import UtilService from "../util/util.service.js";
 
 class SwapController {
-    async prepare(req: FastifyRequest, reply: FastifyReply) {
+    async prepareDeposit(req: FastifyRequest, reply: FastifyReply) {
         try {
             const body = req.body as any;
-            const data = await SwapService.prepareSwap(body);
-            reply.code(200).send(UtilService.customResponse(true, "Swap prepared", data));
+            const data = await SwapService.prepareDeposit(body);
+            reply.code(200).send(UtilService.customResponse(true, "Deposit prepared", data));
         } catch (e: any) {
             reply.code(400).send(UtilService.customResponse(false, e.message || "Prepare failed"));
         }
     }
 
-    async settle(req: FastifyRequest, reply: FastifyReply) {
+    async settleDeposit(req: FastifyRequest, reply: FastifyReply) {
         try {
             const body = req.body as any;
-            const data = await SwapService.settleSwap(body);
-            reply.code(200).send(UtilService.customResponse(true, "Swap settled", data));
+            const data = await SwapService.settleDeposit(body);
+            reply.code(200).send(UtilService.customResponse(true, "Deposit settled", data));
+        } catch (e: any) {
+            reply.code(400).send(UtilService.customResponse(false, e.message || "Settle failed"));
+        }
+    }
+
+    async prepareWithdraw(req: FastifyRequest, reply: FastifyReply) {
+        try {
+            const body = req.body as any;
+            const data = await SwapService.prepareWithdraw(body);
+            reply.code(200).send(UtilService.customResponse(true, "Withdraw prepared", data));
+        } catch (e: any) {
+            reply.code(400).send(UtilService.customResponse(false, e.message || "Prepare failed"));
+        }
+    }
+
+    async settleWithdraw(req: FastifyRequest, reply: FastifyReply) {
+        try {
+            const body = req.body as any;
+            const data = await SwapService.settleWithdraw(body);
+            reply.code(200).send(UtilService.customResponse(true, "Withdraw settled", data));
         } catch (e: any) {
             reply.code(400).send(UtilService.customResponse(false, e.message || "Settle failed"));
         }

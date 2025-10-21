@@ -1,4 +1,4 @@
-import { BusinessModel, IBusiness } from "./business.model.js";
+import { BusinessModel, BusinessDoc } from "./business.model.js";
 import { AzureUtil } from "../util/azure.util.js";
 import { UserModel } from "../user/user.model.js";
 
@@ -9,9 +9,9 @@ class BusinessService {
 
     async createBusinessProfile(
         userId: string,
-        data: Partial<IBusiness>,
+        data: Partial<BusinessDoc>,
         ownershipFile: { buffer: Buffer; filename: string; mimetype?: string }
-    ): Promise<IBusiness> {
+    ): Promise<BusinessDoc> {
         const ownershipUrl = await this.uploadToAzure(
             ownershipFile.buffer,
             `business/${userId}-${Date.now()}-${ownershipFile.filename}`,
@@ -42,11 +42,11 @@ class BusinessService {
         return business;
     }
 
-    async getBusiness(userId: string): Promise<IBusiness | null> {
+    async getBusiness(userId: string): Promise<BusinessDoc | null> {
         return BusinessModel.findOne({ userId });
     }
 
-    async getBusinessById(businessId: string): Promise<IBusiness | null> {
+    async getBusinessById(businessId: string): Promise<BusinessDoc | null> {
         return BusinessModel.findById(businessId);
     }
 

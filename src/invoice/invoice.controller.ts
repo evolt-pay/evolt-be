@@ -6,25 +6,25 @@ class InvoiceController {
         try {
             const { user } = req as any;
 
-            // 🔹 Because `attachFieldsToBody: true`, everything is in req.body
+            // Because `attachFieldsToBody: true`, everything is in req.body
             const body = req.body as any;
-            // 🔹 Extract file from body
+            // Extract file from body
             const fileField = body.files;
 
             if (!fileField || !fileField.toBuffer) {
                 return reply.status(400).send({ message: "Invoice file is required" });
             }
 
-            // 🔹 Convert stream to buffer
+            // Convert stream to buffer
             const buffer = await fileField.toBuffer();
 
-            // 🔹 Normalize the rest of the form fields
+            // Normalize the rest of the form fields
             const data: Record<string, any> = {};
             for (const [key, val] of Object.entries(body)) {
                 if (key !== "file") data[key] = (val as any).value ?? val;
             }
 
-            // 🔹 Proceed to create the invoice
+            // Proceed to create the invoice
             const invoice = await InvoiceService.createInvoice(
                 user.id,
                 data,

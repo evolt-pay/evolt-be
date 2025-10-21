@@ -62,4 +62,4 @@ const InvoiceSchema = new Schema<InvoiceDoc>(
     { timestamps: true }
 );
 
-export default mongoose.model<InvoiceDoc>("Invoice", InvoiceSchema);
+export default mongoose.model<InvoiceDoc>("Invoicev1", InvoiceSchema);

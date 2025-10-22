@@ -5,7 +5,7 @@ import {
     TransferTransaction,
     TransactionReceipt,
 } from "@hashgraph/sdk";
-import { normalizeTxId } from "@util/util.hedera";
+import { normalizeTxId } from "../util/util.hedera.js";
 import axios from "axios";
 
 const OPERATOR_ID = process.env.HEDERA_OPERATOR_ID!;

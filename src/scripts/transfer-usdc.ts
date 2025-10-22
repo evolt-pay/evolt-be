@@ -2,7 +2,6 @@ import { Client, TransferTransaction, TokenId } from "@hashgraph/sdk";
 import dotenv from "dotenv";
 dotenv.config();
 
-// ✅ Initialize Hedera client (Testnet)
 const client = Client.forTestnet().setOperator(
     process.env.HEDERA_OPERATOR_ID!,
     process.env.HEDERA_OPERATOR_KEY!
@@ -10,7 +9,6 @@ const client = Client.forTestnet().setOperator(
 
 async function transferUSDC() {
     try {
-        // Replace with your actual token ID from create-usdc.ts
         const tokenId = TokenId.fromString(process.env.HEDERA_USDC_TOKEN_ID!);
         const treasury = process.env.HEDERA_OPERATOR_ID!;
         const userWallet = "0.0.7026889";

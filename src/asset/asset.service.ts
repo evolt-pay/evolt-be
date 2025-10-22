@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ASSET_TYPES, AssetType, AssetDoc } from "./asset.type.js";
 import { nanoid } from "nanoid";
 import { AssetModel } from "./asset.model.js";
-import { normalize } from "@util/util.data.js";
+import { normalize } from "../util/util.data.js";
 import mongoose from "mongoose";
 
 class AssetService {

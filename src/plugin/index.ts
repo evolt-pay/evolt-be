@@ -47,7 +47,18 @@ export async function corePlugin(
     app.register(fastifyJwt, config.jwt);
 
     app.register(fastifyRedis, {
-        url: process.env.REDIS_URL
+        url: process.env.UPSTASH_REDIS_URL,
+        family: 0,
+        enableReadyCheck: true,
+    });
+
+    app.ready(async () => {
+        try {
+            const pong = await app.redis.ping();
+            console.log('✅ Redis connected successfully:', pong);
+        } catch (err) {
+            console.error('❌ Redis connection failed:', err);
+        }
     });
 
 

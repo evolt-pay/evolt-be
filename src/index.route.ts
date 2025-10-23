@@ -10,8 +10,8 @@ import corporateRoutes from "./corporate/corporate.route.js";
 import poolRoutes from "./pool/pool.route.js";
 import swapRoutes from "./swap/swap.route.js";
 import assetRoutes from "./asset/asset.route.js";
-import walletRoutes from "wallet/wallet.route.js";
-import whatsappRoutes from "whatsapp/whatsapp.route.js";
+import walletRoutes from "./wallet/wallet.route.js";
+import whatsappRoutes from "./whatsapp/whatsapp.route.js";
 
 export const indexRoute = async (app: FastifyInstance) => {
     app.register(authRoutes, { prefix: "/api/v1/auth" });

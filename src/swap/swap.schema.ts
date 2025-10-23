@@ -1,7 +1,7 @@
 import { FastifySchema } from "fastify";
 
 /* ======================================================
-   💰 DEPOSIT (USDC/USDT → vUSD)
+    DEPOSIT (USDC/USDT → vUSD)
 ====================================================== */
 export const PrepareDepositSchema: FastifySchema = {
     description: "Prepare a deposit (USDC/USDT → vUSD)",
@@ -68,7 +68,7 @@ export const SettleDepositSchema: FastifySchema = {
 };
 
 /* ======================================================
-   💸 WITHDRAW (vUSD → USDC/USDT)
+    WITHDRAW (vUSD → USDC/USDT)
 ====================================================== */
 export const PrepareWithdrawSchema: FastifySchema = {
     description: "Prepare a withdrawal (vUSD → USDC/USDT)",

@@ -21,13 +21,29 @@ type RawInv = {
 };
 
 export class InvestorService {
-    async addInvestor(accountId: string, extraData?: Partial<IInvestor>) {
-        let investor = await InvestorModel.findOne({ accountId });
+    async addInvestor(aliasOrAccount: string, extraData?: Partial<IInvestor>) {
+        // Find by alias or accountId
+        let investor = await InvestorModel.findOne({
+            $or: [{ alias: aliasOrAccount }, { accountId: aliasOrAccount }],
+        });
+
+        // Decide which field this input represents
+        const isAccountId = /^0\.0\.\d+$/.test(aliasOrAccount); // e.g. 0.0.123456
+        const isAlias = aliasOrAccount.startsWith("0.0.") && !isAccountId;
+
         if (!investor) {
-            investor = new InvestorModel({ accountId, ...extraData });
+            investor = new InvestorModel({
+                ...(isAlias ? { alias: aliasOrAccount } : { accountId: aliasOrAccount }),
+                ...extraData,
+            });
         } else if (extraData) {
             Object.assign(investor, extraData);
         }
+
+        if (isAccountId && !investor.accountId) {
+            investor.accountId = aliasOrAccount;
+        }
+
         await investor.save();
         return investor;
     }
@@ -214,6 +230,10 @@ export class InvestorService {
             completed,
             totals: { tvlPending, earningsToDatePending },
         };
+    }
+
+    async findByPhone(phone: string) {
+        return InvestorModel.findOne({ phoneNumber: phone });
     }
 
     async attachKycProof(accountId: string, proofCid: string, provider: string) {

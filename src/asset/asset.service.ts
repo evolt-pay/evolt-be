@@ -10,9 +10,7 @@ import { normalize } from "../util/util.data.js";
 import mongoose from "mongoose";
 
 class AssetService {
-    /**
-     * ✅ Create a new asset
-     */
+
     async createAsset(
         userId: string,
         data: Record<string, any>,
@@ -93,7 +91,7 @@ class AssetService {
     }
 
     /**
-     * ✅ Verify an asset (mark as verified)
+     *  Verify an asset (mark as verified)
      */
     async verifyAsset(id: string, verifier: string): Promise<AssetDoc> {
         const asset = await AssetModel.findById(id);
@@ -106,7 +104,7 @@ class AssetService {
     }
 
     /**
-     * ✅ Get all tokenized assets, or filter by type
+     * Get all tokenized assets, or filter by type
      */
     async getAssetsByType(assetType: string): Promise<AssetDoc[]> {
         if (!Object.values(ASSET_TYPES).includes(assetType as AssetType)) {
@@ -124,7 +122,7 @@ class AssetService {
     }
 
     /**
-     * ✅ Get a single asset by ID (populated)
+     * Get a single asset by ID (populated)
      */
     async getAssetById(id: string): Promise<AssetDoc | null> {
         const asset = await AssetModel.findById(id)
@@ -144,7 +142,7 @@ class AssetService {
     }
 
     /**
-     * ✅ Get all verified assets
+     * Get all verified assets
      */
     async getVerifiedAssets(): Promise<AssetDoc[]> {
         return await AssetModel.find({ status: "verified" })

@@ -87,7 +87,7 @@ class SwapService {
     }
 
     /* =======================================================
-       💰 DEPOSIT FLOW (USDC/USDT → vUSD)
+        DEPOSIT FLOW (USDC/USDT → vUSD)
     ======================================================= */
 
     async prepareDeposit({
@@ -129,7 +129,7 @@ class SwapService {
     }
 
     /* =======================================================
-       💸 WITHDRAW FLOW (vUSD → USDC/USDT)
+        WITHDRAW FLOW (vUSD → USDC/USDT)
     ======================================================= */
 
     async prepareWithdraw({

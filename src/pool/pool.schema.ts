@@ -83,7 +83,6 @@ export const GetPoolDetailsSchema: FastifySchema = {
                         tokenId: { type: "string", nullable: true },
                         escrowContractId: { type: "string", nullable: true },
                         _id: { type: "string" },
-                        // business / corporate presentation
                         invoiceNumber: { type: "string" },
                         businessName: { type: "string" },
                         businessDescription: { type: "string" },
@@ -91,20 +90,21 @@ export const GetPoolDetailsSchema: FastifySchema = {
                         corporateLogo: { type: "string", nullable: true },
                         corporateDescription: { type: "string" },
 
-                        // funding stats (off-chain + on-chain)
                         fundedAmount: { type: "number" },
                         totalInvestors: { type: "number" },
                         stakerCountOnChain: { type: "number" },
 
-                        // economics / limits
                         yieldRate: { type: "number" },
                         durationInDays: { type: "number" },
                         minInvestment: { type: "number" },
                         maxInvestment: { type: "number" },
                         totalTarget: { type: "number" },
                         expiryDate: { type: "string", format: "date-time", nullable: true },
-
-                        // audit
+                        status: {
+                            type: "string",
+                            enum: ["funding", "funded", "fully_funded"],
+                            description: "Derived funding status of the pool",
+                        },
                         verifier: { type: "string", nullable: true },
                         verifiedAt: { type: "string", format: "date-time", nullable: true },
                         hcsTxId: { type: "string", nullable: true },

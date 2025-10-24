@@ -200,8 +200,24 @@ class PoolService {
 
         const [agg, stakerCountOnChain] = await Promise.all([aggPromise, stakersPromise]);
         const poolStats = agg[0] || { totalInvestors: 0, totalFunded: 0 };
-        const business = asset.originatorId as BusinessDoc
-        const corporate = asset.corporateId as CorporateDoc
+
+        let status: "funding" | "funded" | "fully_funded";
+        const { totalFunded } = poolStats;
+        const target = asset.totalTarget ?? 0;
+
+        if (target <= 0) {
+            status = "funding";
+        } else if (totalFunded >= target) {
+            status = "fully_funded";
+        } else if (totalFunded > 0) {
+            status = "funded";
+        } else {
+            status = "funding";
+        }
+
+        const business = asset.originatorId as BusinessDoc;
+        const corporate = asset.corporateId as CorporateDoc;
+
         return {
             tokenId: asset.tokenId || null,
             escrowContractId: asset.escrowContractId || null,
@@ -229,6 +245,8 @@ class PoolService {
             verifiedAt: asset.verifiedAt,
             hcsTxId: asset.hcsTxId,
             blobUrl: asset.blobUrl,
+
+            status,
         };
     }
 }

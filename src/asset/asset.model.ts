@@ -19,6 +19,12 @@ const baseAssetSchema = new mongoose.Schema<AssetDoc>(
         totalTarget: Number,
         expiryDate: Date,
         status: { type: String, enum: ["pending", "verified", "tokenized"], default: "pending" },
+        fundedAmount: { type: Number, default: 0 },
+        fundingStatus: {
+            type: String,
+            enum: ["funding", "funded", "fully_funded"],
+            default: "funding",
+        },
         verifier: String,
         blobUrl: String,
         metadata: { type: Object, default: {} },

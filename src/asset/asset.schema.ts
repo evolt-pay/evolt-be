@@ -1,7 +1,8 @@
 import { FastifySchema } from "fastify";
 
 export const CreateAssetSchema: FastifySchema = {
-    description: "Create a new asset (invoice, agriculture, real estate, creator IP, or receivable)",
+    description:
+        "Create a new asset (invoice, agriculture, real estate, creator IP, or receivable)",
     tags: ["asset"],
     consumes: ["multipart/form-data"],
     summary: "Upload asset document and create an asset record",
@@ -23,6 +24,11 @@ export const CreateAssetSchema: FastifySchema = {
                         blobUrl: { type: "string" },
                         yieldRate: { type: "number" },
                         durationDays: { type: "number" },
+                        fundedAmount: { type: "number" },
+                        fundingStatus: {
+                            type: "string",
+                            enum: ["funding", "funded", "fully_funded"],
+                        },
                     },
                 },
             },
@@ -90,6 +96,11 @@ export const GetAssetSchema: FastifySchema = {
                         blobUrl: { type: "string" },
                         tokenId: { type: "string" },
                         verifiedAt: { type: "string" },
+                        fundedAmount: { type: "number" },
+                        fundingStatus: {
+                            type: "string",
+                            enum: ["funding", "funded", "fully_funded"],
+                        },
                     },
                 },
             },
@@ -98,7 +109,8 @@ export const GetAssetSchema: FastifySchema = {
 };
 
 export const GetAssetsByTypeSchema: FastifySchema = {
-    description: "Fetch all assets by asset type (e.g. invoice, real_estate, agriculture)",
+    description:
+        "Fetch all assets by asset type (e.g. invoice, real_estate, agriculture)",
     tags: ["asset"],
     summary: "Get assets by type",
     params: {
@@ -107,7 +119,14 @@ export const GetAssetsByTypeSchema: FastifySchema = {
         properties: {
             type: {
                 type: "string",
-                enum: ["all", "invoice", "real_estate", "agriculture", "creator_ip", "receivable"],
+                enum: [
+                    "all",
+                    "invoice",
+                    "real_estate",
+                    "agriculture",
+                    "creator_ip",
+                    "receivable",
+                ],
                 description: "Type of asset to filter by",
             },
         },
@@ -132,6 +151,11 @@ export const GetAssetsByTypeSchema: FastifySchema = {
                             currency: { type: "string" },
                             yieldRate: { type: "number" },
                             totalTarget: { type: "number" },
+                            fundedAmount: { type: "number" },
+                            fundingStatus: {
+                                type: "string",
+                                enum: ["funding", "funded", "fully_funded"],
+                            },
                             minInvestment: { type: "number" },
                             maxInvestment: { type: "number" },
                             expiryDate: { type: "string", format: "date-time" },
@@ -170,7 +194,11 @@ export const GetVerifiedAssetsSchema: FastifySchema = {
                             tokenEvm: { type: "string" },
                             blobUrl: { type: "string" },
                             verifiedAt: { type: "string" },
-                            // tokenized: { type: "boolean" },
+                            fundedAmount: { type: "number" },
+                            fundingStatus: {
+                                type: "string",
+                                enum: ["funding", "funded", "fully_funded"],
+                            },
                         },
                     },
                 },

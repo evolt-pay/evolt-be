@@ -15,6 +15,7 @@ interface PoolListOptions {
 }
 
 class PoolService {
+
     async listPools({ status = "all", page = 1, limit = 20, search }: PoolListOptions) {
         const skip = (page - 1) * limit;
 
@@ -31,7 +32,6 @@ class PoolService {
         const base: PipelineStage[] = [
             { $match: match },
 
-            // 1️⃣ Join Business
             {
                 $lookup: {
                     from: BusinessModel.collection.name,
@@ -42,7 +42,6 @@ class PoolService {
             },
             { $unwind: { path: "$biz", preserveNullAndEmptyArrays: true } },
 
-            // 2️⃣ Join Corporate
             {
                 $lookup: {
                     from: CorporateModel.collection.name,
@@ -53,7 +52,6 @@ class PoolService {
             },
             { $unwind: { path: "$corp", preserveNullAndEmptyArrays: true } },
 
-            // 3️⃣ Funded amount aggregate
             {
                 $lookup: {
                     from: InvestmentModel.collection.name,
@@ -75,7 +73,6 @@ class PoolService {
                 },
             },
 
-            // 4️⃣ Derived fields
             {
                 $addFields: {
                     businessName: "$biz.businessName",
@@ -98,7 +95,6 @@ class PoolService {
                 },
             },
 
-            // 5️⃣ fundingProgress
             {
                 $addFields: {
                     fundingProgress: {
@@ -121,14 +117,24 @@ class PoolService {
                 },
             },
 
-            // 6️⃣ derivedStatus
             {
                 $addFields: {
                     derivedStatus: {
                         $switch: {
                             branches: [
-                                { case: { $gte: ["$fundingProgress", 100] }, then: "fully_funded" },
-                                { case: { $gt: ["$fundedAmount", 0] }, then: "funded" },
+                                {
+                                    case: { $gte: ["$fundingProgress", 100] },
+                                    then: "fully_funded",
+                                },
+                                {
+                                    case: {
+                                        $and: [
+                                            { $gte: ["$fundingProgress", 1] },
+                                            { $lt: ["$fundingProgress", 100] },
+                                        ],
+                                    },
+                                    then: "funded",
+                                },
                             ],
                             default: "funding",
                         },
@@ -181,13 +187,20 @@ class PoolService {
         return { page, limit, total, items };
     }
 
+
     async getPoolDetails(assetId: string) {
-        const asset = await assetService.getAssetById(assetId) as AssetDoc;
+        const asset = (await assetService.getAssetById(assetId)) as AssetDoc;
         if (!asset) throw new Error("Asset not found");
 
         const aggPromise = InvestmentModel.aggregate([
             { $match: { tokenId: asset.tokenId } },
-            { $group: { _id: null, totalInvestors: { $sum: 1 }, totalFunded: { $sum: "$vusdAmount" } } },
+            {
+                $group: {
+                    _id: null,
+                    totalInvestors: { $sum: 1 },
+                    totalFunded: { $sum: "$vusdAmount" },
+                },
+            },
         ]);
 
         const exclude: string[] = [];
@@ -198,18 +211,23 @@ class PoolService {
             ? countTokenHolders(asset.tokenId, { excludeAccounts: exclude })
             : Promise.resolve(0);
 
-        const [agg, stakerCountOnChain] = await Promise.all([aggPromise, stakersPromise]);
+        const [agg, stakerCountOnChain] = await Promise.all([
+            aggPromise,
+            stakersPromise,
+        ]);
+
         const poolStats = agg[0] || { totalInvestors: 0, totalFunded: 0 };
 
-        let status: "funding" | "funded" | "fully_funded";
-        const { totalFunded } = poolStats;
+        const totalFunded = poolStats.totalFunded;
         const target = asset.totalTarget ?? 0;
 
-        if (target <= 0) {
-            status = "funding";
-        } else if (totalFunded >= target) {
+        const fundingProgress =
+            target > 0 ? Math.min((totalFunded / target) * 100, 100) : 0;
+
+        let status: "funding" | "funded" | "fully_funded";
+        if (fundingProgress >= 100) {
             status = "fully_funded";
-        } else if (totalFunded > 0) {
+        } else if (fundingProgress >= 1) {
             status = "funded";
         } else {
             status = "funding";
@@ -227,12 +245,15 @@ class PoolService {
             businessName: business.businessName || "N/A",
             businessDescription: business?.description || "",
             corporateName: corporate?.name || "N/A",
-            corporateLogo: (corporate as any)?.logoUrl ?? (corporate as any)?.logo ?? null,
+            corporateLogo:
+                (corporate as any)?.logoUrl ?? (corporate as any)?.logo ?? null,
             corporateDescription: corporate?.description || "",
 
-            fundedAmount: poolStats.totalFunded,
+            fundedAmount: totalFunded,
             totalInvestors: poolStats.totalInvestors,
             stakerCountOnChain,
+            fundingProgress,
+            status,
 
             yieldRate: asset.yieldRate,
             durationInDays: asset.durationDays || 90,
@@ -245,8 +266,6 @@ class PoolService {
             verifiedAt: asset.verifiedAt,
             hcsTxId: asset.hcsTxId,
             blobUrl: asset.blobUrl,
-
-            status,
         };
     }
 }

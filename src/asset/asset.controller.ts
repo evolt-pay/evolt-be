@@ -85,6 +85,7 @@ class AssetController {
     async getVerifiedAssets(_req: FastifyRequest, reply: FastifyReply) {
         try {
             const assets = await AssetService.getVerifiedAssets();
+            console.log(assets[0])
             return reply.code(200).send({
                 success: true,
                 message: "Verified assets ready for investment",

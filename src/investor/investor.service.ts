@@ -22,13 +22,11 @@ type RawInv = {
 
 export class InvestorService {
     async addInvestor(aliasOrAccount: string, extraData?: Partial<IInvestor>) {
-        // Find by alias or accountId
         let investor = await InvestorModel.findOne({
             $or: [{ alias: aliasOrAccount }, { accountId: aliasOrAccount }],
         });
 
-        // Decide which field this input represents
-        const isAccountId = /^0\.0\.\d+$/.test(aliasOrAccount); // e.g. 0.0.123456
+        const isAccountId = /^0\.0\.\d+$/.test(aliasOrAccount);
         const isAlias = aliasOrAccount.startsWith("0.0.") && !isAccountId;
 
         if (!investor) {

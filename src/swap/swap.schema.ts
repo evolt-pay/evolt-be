@@ -132,3 +132,33 @@ export const SettleWithdrawSchema: FastifySchema = {
         },
     },
 };
+
+export const FaucetUSDCSchema: FastifySchema = {
+    description: "Send test USDC from treasury to a user (faucet)",
+    tags: ["wallet", "swap"],
+    body: {
+        type: "object",
+        required: ["accountId", "amount"],
+        properties: {
+            accountId: { type: "string" },
+            amount: { type: "number", minimum: 0.000001 },
+        },
+    },
+    response: {
+        200: {
+            type: "object",
+            properties: {
+                success: { type: "boolean" },
+                message: { type: "string" },
+                data: {
+                    type: "object",
+                    properties: {
+                        txId: { type: "string" },
+                        status: { type: "string" },
+                        minted: { type: "boolean" },
+                    },
+                },
+            },
+        },
+    },
+};

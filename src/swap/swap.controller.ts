@@ -42,6 +42,18 @@ class SwapController {
             reply.code(400).send(UtilService.customResponse(false, e.message || "Settle failed"));
         }
     }
+
+
+    async faucetUSDC(req: FastifyRequest, reply: FastifyReply) {
+        try {
+            const body = req.body as any;
+            const data = await SwapService.faucetUSDC({ accountId: body.accountId, amount: body.amount });
+            reply.code(200).send(UtilService.customResponse(true, "USDC faucet sent", data));
+        } catch (e: any) {
+            reply.code(400).send(UtilService.customResponse(false, e.message || "Faucet failed"));
+        }
+    }
+
 }
 
 export default new SwapController();

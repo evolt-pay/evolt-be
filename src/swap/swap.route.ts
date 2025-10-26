@@ -7,6 +7,7 @@ import {
     SettleDepositSchema,
     PrepareWithdrawSchema,
     SettleWithdrawSchema,
+    FaucetUSDCSchema
 } from "./swap.schema.js";
 
 export default async function swapRoutes(app: FastifyInstance) {
@@ -39,6 +40,13 @@ export default async function swapRoutes(app: FastifyInstance) {
             preHandler: [authenticateInvestor],
             handler: (req, reply) => SwapController.settleWithdraw(req, reply),
             schema: SettleWithdrawSchema,
+        },
+        {
+            method: RouteMethods.POST,
+            url: "/faucet/usdc",
+            preHandler: [authenticateInvestor],
+            handler: (req, reply) => SwapController.faucetUSDC(req, reply),
+            schema: FaucetUSDCSchema,
         },
     ];
 

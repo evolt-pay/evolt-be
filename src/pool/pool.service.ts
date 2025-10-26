@@ -192,13 +192,21 @@ class PoolService {
         const asset = (await assetService.getAssetById(assetId)) as AssetDoc;
         if (!asset) throw new Error("Asset not found");
 
+
         const aggPromise = InvestmentModel.aggregate([
             { $match: { tokenId: asset.tokenId } },
             {
                 $group: {
                     _id: null,
-                    totalInvestors: { $sum: 1 },
+                    investors: { $addToSet: { $ifNull: ["$investorId", "$investorEvm"] } },
                     totalFunded: { $sum: "$vusdAmount" },
+                },
+            },
+            {
+                $project: {
+                    _id: 0,
+                    totalFunded: 1,
+                    totalInvestors: { $size: "$investors" },
                 },
             },
         ]);

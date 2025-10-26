@@ -15,6 +15,7 @@ import dotenv from "dotenv";
 import { AssetDoc } from "asset/asset.type.js";
 dotenv.config();
 
+/* ========== Setup ========== */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const abiPath = path.resolve(__dirname, "../abi/VoltEscrow.json");
@@ -30,13 +31,16 @@ const VUSD_TOKEN_ID = process.env.HEDERA_VUSD_TOKEN_ID!;
 const VUSD_DECIMALS = 6;
 const FRACTION_SIZE = 10; // 1 iToken = 10 vUSD
 
+/* ===== ETHERS ===== */
 const provider = new ethers.JsonRpcProvider(RPC_URL, { name: "hedera-testnet", chainId: 296 });
 const signer = new ethers.Wallet(HEDERA_EVM_OPERATOR_PRIVATE_KEY, provider);
 
+/* ===== SDK ===== */
 const operatorId = AccountId.fromString(HEDERA_EVM_OPERATOR_ID);
 const operatorKey = PrivateKey.fromStringECDSA(HEDERA_EVM_OPERATOR_PRIVATE_KEY);
 const hederaClient = Client.forTestnet().setOperator(operatorId, operatorKey);
 
+/* ===== HELPERS ===== */
 function idToEvmAddress(id: string): string {
     if (id.startsWith("0x")) return ethers.getAddress(id);
     const [shardStr, realmStr, numStr] = id.split(".");
@@ -165,6 +169,7 @@ async function getEscrowForToken(tokenIdOrEvm: string) {
     return { escrowEvm, tokenEvm };
 }
 
+/* ===== SERVICE ===== */
 class InvestmentService {
     async investFromDeposit(
         { accountId, investorId }: { accountId: string; investorId: string },
@@ -188,7 +193,7 @@ class InvestmentService {
         const { units: vusdUnits, vusdAmount } = extractVusdAmountFromTx(
             mirrorTx,
             accountId,
-            VUSD_TOKEN_ID,
+            '0.0.7045631',    // ✅ derived from VOLT_ESCROW_EVM_ADDRESS',
             VUSD_TOKEN_ID,
             VUSD_DECIMALS
         );
@@ -232,6 +237,7 @@ class InvestmentService {
         const investment = await InvestmentModel.create({
             investorId,
             investorEvm,
+            assetId,
             tokenId: asset.tokenId,
             tokenEvm,
             assetType: asset.assetType,
@@ -244,24 +250,6 @@ class InvestmentService {
             txId: tx2.hash,
             depositTxId: normalizeTxId(txId),
             maturedAt,
-        });
-
-        const newFundedAmount = funded + vusdAmount;
-        const fundingProgress =
-            totalTarget > 0 ? Math.min((newFundedAmount / totalTarget) * 100, 100) : 0;
-
-        let fundingStatus: "funding" | "funded" | "fully_funded";
-        if (fundingProgress >= 100) {
-            fundingStatus = "fully_funded";
-        } else if (fundingProgress >= 1) {
-            fundingStatus = "funded";
-        } else {
-            fundingStatus = "funding";
-        }
-
-        await AssetModel.findByIdAndUpdate(asset._id, {
-            fundedAmount: newFundedAmount,
-            fundingStatus,
         });
 
         await new TopicMessageSubmitTransaction()

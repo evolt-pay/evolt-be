@@ -217,21 +217,25 @@ class PoolService {
         ]);
 
         const poolStats = agg[0] || { totalInvestors: 0, totalFunded: 0 };
-
-        const totalFunded = poolStats.totalFunded;
-        const target = asset.totalTarget ?? 0;
+        const totalFunded = poolStats.totalFunded ?? 0;
+        const totalTarget = asset.totalTarget ?? 0;
 
         const fundingProgress =
-            target > 0 ? Math.min((totalFunded / target) * 100, 100) : 0;
+            totalTarget > 0 ? Math.min((totalFunded / totalTarget) * 100, 100) : 0;
 
         let status: "funding" | "funded" | "fully_funded";
-        if (fundingProgress >= 100) {
-            status = "fully_funded";
-        } else if (fundingProgress >= 1) {
-            status = "funded";
-        } else {
-            status = "funding";
-        }
+        if (fundingProgress >= 100) status = "fully_funded";
+        else if (fundingProgress >= 1) status = "funded";
+        else status = "funding";
+
+        const remainingTarget = Math.max(totalTarget - totalFunded, 0);
+
+        const baseMin = Number(asset.minInvestment ?? 0);
+        const baseMax = Number(asset.maxInvestment ?? totalTarget);
+
+        const minInvestment =
+            remainingTarget < baseMin ? remainingTarget : baseMin;
+        const maxInvestment = Math.min(baseMax, remainingTarget);
 
         const business = asset.originatorId as BusinessDoc;
         const corporate = asset.corporateId as CorporateDoc;
@@ -252,14 +256,14 @@ class PoolService {
             fundedAmount: totalFunded,
             totalInvestors: poolStats.totalInvestors,
             stakerCountOnChain,
-            fundingProgress,
+            fundingProgress: Math.round(fundingProgress),
             status,
 
             yieldRate: asset.yieldRate,
             durationInDays: asset.durationDays || 90,
-            minInvestment: asset.minInvestment ?? 0,
-            maxInvestment: asset.maxInvestment ?? 0,
-            totalTarget: asset.totalTarget ?? 0,
+            minInvestment: Math.max(minInvestment, 0),
+            maxInvestment: Math.max(maxInvestment, 0),
+            totalTarget,
             expiryDate: asset.expiryDate,
 
             verifier: asset.verifier,

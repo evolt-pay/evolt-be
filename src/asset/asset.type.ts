@@ -70,6 +70,7 @@ export interface AssetDoc extends Document {
 
     tokenId?: string;
     tokenEvm?: string;
+    symbol: string,
     escrowContractId?: string;
     escrowEvm?: string;
     hcsTxId?: string;

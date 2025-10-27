@@ -22,6 +22,7 @@ class AssetService {
         const normalizedData = {
             assetType: normalize(data.assetType),
             title: normalize(data.title),
+            symbol: normalize(data.symbol),
             description: normalize(data.description),
             amount: normalize(data.amount),
             currency: normalize(data.currency),
@@ -52,6 +53,7 @@ class AssetService {
 
         const assetPayload: Partial<AssetDoc> = {
             title: normalizedData.title,
+            symbol: normalizedData.symbol,
             description: normalizedData.description,
             assetType: assetType as AssetType,
             originatorId: business._id as mongoose.Types.ObjectId,

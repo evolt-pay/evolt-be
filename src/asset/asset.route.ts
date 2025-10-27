@@ -1,6 +1,6 @@
 import { FastifyInstance, RouteOptions } from "fastify";
 import AssetController from "./asset.controller.js";
-import { authenticateUser } from "../middleware/index.js";
+import { authenticateInvestor, authenticateUser } from "../middleware/index.js";
 import {
     CreateAssetSchema,
     VerifyAssetSchema,
@@ -15,7 +15,7 @@ export default async function assetRoutes(app: FastifyInstance) {
         {
             method: RouteMethods.POST,
             url: "/",
-            preHandler: [authenticateUser],
+            preHandler: [authenticateInvestor],
             handler: (req, reply) => AssetController.createAsset(req, reply),
             schema: CreateAssetSchema,
         },

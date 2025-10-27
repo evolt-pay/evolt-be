@@ -63,6 +63,7 @@ export interface AssetDoc extends Document {
 
     originatorId: mongoose.Types.ObjectId | BusinessDoc;
     corporateId?: mongoose.Types.ObjectId | CorporateDoc;
+    userId?: mongoose.Types.ObjectId | CorporateDoc;
     metadata: any;
     blobUrl?: string;
     verifier?: string;

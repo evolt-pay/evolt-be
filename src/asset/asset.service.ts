@@ -12,7 +12,7 @@ import mongoose from "mongoose";
 class AssetService {
 
     async createAsset(
-        userId: string,
+        userId: mongoose.Types.ObjectId,
         data: Record<string, any>,
         file: { buffer: Buffer }
     ): Promise<AssetDoc> {
@@ -70,6 +70,7 @@ class AssetService {
             blobUrl,
             status: "pending",
             tokenName,
+            userId,
         };
 
         const asset = await AssetModel.create(assetPayload);

@@ -12,6 +12,7 @@ const baseAssetSchema = new mongoose.Schema<AssetDoc>(
         description: String,
         originatorId: { type: mongoose.Schema.Types.ObjectId, ref: "Business" },
         corporateId: { type: mongoose.Schema.Types.ObjectId, ref: "Corporate" },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "Investor" },
         amount: { type: Number, required: true },
         currency: { type: String, default: "USD" },
         yieldRate: { type: Number, default: 0.1 },
